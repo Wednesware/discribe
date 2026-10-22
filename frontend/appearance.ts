@@ -12,6 +12,7 @@ export interface Palette {
   soft: string;
   hover: string;
   dark: boolean;
+  family?: 'mixed';
 }
 
 export const codeStyles: Record<string, Palette> = {
@@ -98,7 +99,7 @@ export const writeStyles: Record<string, Palette> = {
   },
 };
 
-// Each mode offers both families; mode preferences remain independent.
+// Each mode offers all theme families; preferences remain independent.
 const nebula: Palette = {
   background: '#211e32',
   surface: '#2b2940',
@@ -133,10 +134,88 @@ Object.assign(writeStyles, {
   Aurora: aurora,
 });
 
+// Mid-tone chrome with softer grey or colored pages, distinct from the
+// bright light palettes and the near-black dark palettes.
+const mixedStyles: Record<string, Palette> = {
+  Pewter: {
+    background: '#939ca6',
+    surface: '#a4adb6',
+    raised: '#c2c9d0',
+    paper: '#bbc3cb',
+    text: '#18212b',
+    muted: '#394857',
+    line: '#75818e',
+    accent: '#344c79',
+    soft: '#a2b1c4',
+    hover: '#b4bec9',
+    dark: false,
+    family: 'mixed',
+  },
+  Denim: {
+    background: '#839ab3',
+    surface: '#96abc0',
+    raised: '#bdcfe0',
+    paper: '#b2c4d7',
+    text: '#142333',
+    muted: '#30465d',
+    line: '#657f9b',
+    accent: '#304d7c',
+    soft: '#98afcb',
+    hover: '#a6bdd3',
+    dark: false,
+    family: 'mixed',
+  },
+  Moss: {
+    background: '#8a9e91',
+    surface: '#9fb2a4',
+    raised: '#c5d5c8',
+    paper: '#becfc0',
+    text: '#192b24',
+    muted: '#344d40',
+    line: '#6b8475',
+    accent: '#305c48',
+    soft: '#a3bead',
+    hover: '#b3c9b9',
+    dark: false,
+    family: 'mixed',
+  },
+  Clay: {
+    background: '#ab9488',
+    surface: '#bba79a',
+    raised: '#decec1',
+    paper: '#d4c1b4',
+    text: '#30221d',
+    muted: '#574037',
+    line: '#8d7367',
+    accent: '#774734',
+    soft: '#c7aa99',
+    hover: '#cdb6a7',
+    dark: false,
+    family: 'mixed',
+  },
+  Lavender: {
+    background: '#9a90ae',
+    surface: '#ada3bf',
+    raised: '#d2c8e1',
+    paper: '#c4b9d4',
+    text: '#292036',
+    muted: '#483b5a',
+    line: '#7e708f',
+    accent: '#634775',
+    soft: '#b6a3c9',
+    hover: '#c0b0d1',
+    dark: false,
+    family: 'mixed',
+  },
+};
+Object.assign(codeStyles, mixedStyles);
+Object.assign(writeStyles, mixedStyles);
+
 export function themeGroups(styles: Record<string, Palette>) {
   return {
-    'Dark themes': Object.keys(styles).filter((name) => styles[name].dark),
-    'Light themes': Object.keys(styles).filter((name) => !styles[name].dark),
+    'Dark themes': Object.keys(styles).filter((name) => styles[name].dark && !styles[name].family),
+    'Mixed themes': Object.keys(styles).filter((name) => styles[name].family === 'mixed'),
+    'Light themes': Object.keys(styles).filter((name) => !styles[name].dark && !styles[name].family),
   };
 }
 
@@ -165,6 +244,7 @@ export function applyAppearance(mode: Mode, settings: Settings) {
   document.body.style.colorScheme = palette.dark ? 'dark' : 'light';
   document.body.dataset.theme = mode === 'code' ? settings.codeStyle : settings.writeStyle;
   document.body.dataset.scheme = palette.dark ? 'dark' : 'light';
+  document.body.dataset.themeFamily = palette.family || (palette.dark ? 'dark' : 'light');
   const pattern = `radial-gradient(ellipse at 14% 12%, ${palette.accent}${palette.dark ? '19' : '1a'}, transparent 44%), radial-gradient(ellipse at 85% 72%, ${palette.dark ? '#b39ce61a' : '#8d9dc51a'}, transparent 46%)`;
   document.body.style.setProperty('--ambient-pattern', pattern);
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', palette.surface);

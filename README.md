@@ -91,9 +91,10 @@ view can simplify formatting. Discribe keeps an original version and offers
 `.discribe` exports when you need the full structured rich-text representation.
 
 Preferences have separate Code and Write theme selectors, each grouped into
-**Dark themes** and **Light themes**. Code defaults to dark Graphite. Write defaults
+**Dark themes**, **Mixed themes**, and **Light themes**. Code defaults to dark Graphite. Write defaults
 to a darker, colorful Grey blue; Nebula and Aurora offer purple and teal alternatives.
-Mist and Sage remain available as light choices for either mode. Themes include
+Mixed themes offer mid-tone grey and colored surfaces: Pewter, Denim, Moss, Clay,
+and Lavender. Mist and Sage remain available as light choices for either mode. Themes include
 quiet, static ambient circles behind the editing surface; patterns never intercept
 input and respect reduced motion.
 

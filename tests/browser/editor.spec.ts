@@ -306,7 +306,7 @@ test('legacy rich documents round-trip through Markdown source without edits or 
   expect(JSON.parse(await exportedText(page)).content).toEqual(before.content);
 });
 
-test('independent light and dark theme groups persist with dark colorful Write defaults and patterns', async ({
+test('independent light, mixed, and dark theme groups persist with dark colorful Write defaults and patterns', async ({
   page,
 }) => {
   await ready(page);
@@ -320,6 +320,7 @@ test('independent light and dark theme groups persist with dark colorful Write d
     const select = page.getByRole('combobox', { name, exact: true });
     await expect(select.locator('optgroup[label="Dark themes"] option')).not.toHaveCount(0);
     await expect(select.locator('optgroup[label="Light themes"] option')).not.toHaveCount(0);
+    await expect(select.locator('optgroup[label="Mixed themes"] option')).toHaveCount(5);
   }
   await page.getByRole('combobox', { name: 'Code mode style', exact: true }).selectOption('Mist');
   await page.getByRole('combobox', { name: 'Write mode style', exact: true }).selectOption('Nebula');
@@ -335,6 +336,19 @@ test('independent light and dark theme groups persist with dark colorful Write d
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Code mode style', exact: true })).toHaveValue('Mist');
   await expect(page.getByRole('combobox', { name: 'Write mode style', exact: true })).toHaveValue('Nebula');
+  await page.getByRole('combobox', { name: 'Code mode style', exact: true }).selectOption('Pewter');
+  await page.getByRole('combobox', { name: 'Write mode style', exact: true }).selectOption('Denim');
+  await page.getByRole('button', { name: 'Save preferences' }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-theme-family', 'mixed');
+  await expect(page.locator('body')).toHaveAttribute('data-theme', 'Pewter');
+  await page.reload();
+  await expect(page.locator('#editor-loading')).toBeHidden();
+  await expect(page.locator('body')).toHaveAttribute('data-theme', 'Pewter');
+  await expect(page.locator('#code-editor')).toHaveCSS('background-color', 'rgb(187, 195, 203)');
+  await page.getByRole('button', { name: '✎ Write', exact: true }).click();
+  await expect(page.locator('.bn-editor:visible')).toBeVisible();
+  await expect(page.locator('body')).toHaveAttribute('data-theme-family', 'mixed');
+  await expect(page.locator('body')).toHaveAttribute('data-theme', 'Denim');
 });
 
 for (const nativeKind of ['markdown', 'rich']) {

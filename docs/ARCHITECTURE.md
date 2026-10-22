@@ -35,7 +35,8 @@ rehydrates an active Yjs fragment from an import snapshot. Viewer permissions ap
 to both engines.
 
 `frontend/appearance.ts` defines independent Code and Write theme preferences,
-with light/dark optgroups in each selector and darker defaults. CSS gradient
+with light, mixed, and dark optgroups in each selector and darker defaults.
+Mixed palettes pair mid-tone grey or colored chrome with a softer tinted editor page. CSS gradient
 circles provide static ambient patterns behind editor content.
 
 `frontend/storage.ts` uses IndexedDB transactions in a browser and registered

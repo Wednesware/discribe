@@ -1238,3 +1238,8 @@ body .code-editor {
   background-color: var(--bg);
   background-image: var(--ambient-pattern);
 }
+
+/* Mixed palettes pair mid-tone chrome with a softer tinted editor page. */
+body[data-theme-family='mixed'] .code-editor {
+  background-color: var(--paper);
+}

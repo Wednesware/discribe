@@ -73,12 +73,16 @@ export class CodeAdapter implements Adapter {
             { token: 'string', foreground: 'a5ceaf' },
           ]
         : [
-            { token: 'comment', foreground: '546b77', fontStyle: 'italic' },
-            { token: 'keyword', foreground: '654381' },
-            { token: 'string', foreground: '2c6655' },
+            {
+              token: 'comment',
+              foreground: palette.family === 'mixed' ? palette.muted.slice(1) : '546b77',
+              fontStyle: 'italic',
+            },
+            { token: 'keyword', foreground: palette.family === 'mixed' ? '50305e' : '654381' },
+            { token: 'string', foreground: palette.family === 'mixed' ? '254c3b' : '2c6655' },
           ],
       colors: {
-        'editor.background': palette.background,
+        'editor.background': palette.family === 'mixed' ? palette.paper : palette.background,
         'editor.foreground': palette.text,
         'editorLineNumber.foreground': palette.muted,
         'editorLineNumber.activeForeground': palette.text,
