@@ -7,19 +7,19 @@
 
 :root {
   font-family: Inter, system-ui, sans-serif;
-  color: #35445c;
-  background: #bfcbd9;
+  color: #dce6f4;
+  background: #182330;
   font-synthesis: none;
-  --bg: #bfcbd9;
-  --surface: #cbd5e1;
-  --surface-raised: #dbe3ed;
-  --paper: #d1dbe6;
-  --text: #30445e;
-  --muted: #536a83;
-  --line: #a9bacd;
-  --accent: #526e9c;
-  --accent-soft: #b8c8df;
-  --hover: #bccbde;
+  --bg: #182330;
+  --surface: #202e3e;
+  --surface-raised: #304258;
+  --paper: #27374a;
+  --text: #dce6f4;
+  --muted: #a4b7cd;
+  --line: #40566d;
+  --accent: #91b6df;
+  --accent-soft: #35465f;
+  --hover: #374b64;
   --sidebar: 272px;
   --write-width: 820px;
   --write-font: Inter;
@@ -1232,4 +1232,38 @@ body .document-meta > span:first-child,
 body .write-instance [data-content-type='quote'],
 body .write-instance .bn-side-menu {
   color: var(--muted);
+}
+
+/* Broad, quiet ambient circles sit behind the editor, never above its text. */
+body .editor-stage {
+  background-color: var(--bg);
+  background-image: var(--ambient-pattern);
+}
+body .writing-page {
+  background-image: var(--ambient-pattern);
+}
+body .code-editor {
+  position: relative;
+  isolation: isolate;
+}
+body .code-editor::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background-image: var(--ambient-pattern);
+  opacity: 0.45;
+}
+body .code-instance {
+  position: relative;
+  z-index: 3;
+}
+body .monaco-editor,
+body .monaco-editor-background {
+  background-color: transparent !important;
+}
+body .code-editor {
+  background-color: var(--bg);
+  background-image: var(--ambient-pattern);
 }

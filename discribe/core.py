@@ -44,6 +44,10 @@ class Document:
     revision: int = 0
     filePath: str | None = None
     collaboration: dict | None = None
+    richView: dict | None = None
+    sourceView: dict | None = None
+    viewBackup: dict | None = None
+    markdown: str | None = None
 
     @classmethod
     def parse(cls, value: dict) -> Document:

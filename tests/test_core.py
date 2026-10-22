@@ -65,3 +65,21 @@ def test_settings_persist_and_native_paths_require_dialog(tmp_path):
     value = asdict(Document(filePath=str(path), content="overwrite"))
     assert bridge.write_file(value) is None
     assert path.read_text() == "keep me"
+
+
+def test_native_markdown_save_and_view_backups_survive_restart(tmp_path):
+    from discribe.desktop import DesktopBridge
+    bridge = DesktopBridge(tmp_path / 'workspace')
+    target = tmp_path / 'note.md'
+    bridge.dialog = lambda *args: target
+    doc = Document(name='note.md', kind='write', preferredEditor='write', contentFormat='blocknote',
+                   content=[{'type': 'heading', 'props': {'level': 1}, 'content': 'A note'}],
+                   markdown='# A note\n', viewBackup={'content': [{'type': 'paragraph', 'content': 'Original'}]},
+                   sourceView={'text': '# A note\n', 'blocks': '[]'})
+    saved = bridge.store.save(asdict(doc))
+    bridge.write_file(saved)
+    assert target.read_text() == '# A note\n'
+    restored = DocumentStore(tmp_path / 'workspace').list()[0]
+    assert restored['viewBackup'] == doc.viewBackup
+    assert restored['sourceView'] == doc.sourceView
+    assert read_document(target).content == '# A note\n'

@@ -13,6 +13,10 @@ export interface Doc {
   revision: number;
   filePath?: string | null;
   collaboration?: { session: string; server: string } | null;
+  richView?: { source: string; blocks: any[] };
+  sourceView?: { text: string; blocks: string };
+  viewBackup?: { content: string | any[] };
+  markdown?: string;
 }
 export interface Settings {
   defaultMode: Mode;
@@ -75,7 +79,7 @@ export function newDoc(kind: Mode, name?: string, workspace = 'Personal'): Doc {
   const time = new Date().toISOString();
   return {
     id: crypto.randomUUID(),
-    name: name || (kind === 'code' ? 'Untitled.txt' : 'Untitled.discribe'),
+    name: name || (kind === 'code' ? 'Untitled.txt' : 'Untitled.md'),
     kind,
     preferredEditor: kind,
     contentFormat: kind === 'code' ? 'text' : 'blocknote',

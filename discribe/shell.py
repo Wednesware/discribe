@@ -23,7 +23,7 @@ def create_page(asset_prefix="./"):
             E("div", E("span", class_="mode-pill"),
               button("⌘  Code", "mode-code", cls="mode-button", aria_pressed="false"),
               button("✎  Write", "mode-write", cls="mode-button", aria_pressed="true"),
-              class_="mode-switch", role="group", aria_label="Appearance"),
+              class_="mode-switch", role="group", aria_label="Editor mode"),
             E("div", E("span", "All changes saved", id="save-state", role="status"),
               button("↗  Collaborate", "collaborate", cls="collaborate-button"),
               icon("⚙", "settings", "Settings"), class_="toolbar-end"), class_="toolbar")

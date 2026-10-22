@@ -58,17 +58,17 @@ export const codeStyles: Record<string, Palette> = {
 
 export const writeStyles: Record<string, Palette> = {
   'Grey blue': {
-    background: '#bfcbd9',
-    surface: '#cbd5e1',
-    raised: '#dbe3ed',
-    paper: '#d1dbe6',
-    text: '#30445e',
-    muted: '#536a83',
-    line: '#a9bacd',
-    accent: '#526e9c',
-    soft: '#b8c8df',
-    hover: '#bccbde',
-    dark: false,
+    background: '#182330',
+    surface: '#202e3e',
+    raised: '#304258',
+    paper: '#27374a',
+    text: '#dce6f4',
+    muted: '#a4b7cd',
+    line: '#40566d',
+    accent: '#91b6df',
+    soft: '#35465f',
+    hover: '#374b64',
+    dark: true,
   },
   Mist: {
     background: '#d6dfe8',
@@ -98,6 +98,48 @@ export const writeStyles: Record<string, Palette> = {
   },
 };
 
+// Each mode offers both families; mode preferences remain independent.
+const nebula: Palette = {
+  background: '#211e32',
+  surface: '#2b2940',
+  raised: '#3b3656',
+  paper: '#322e49',
+  text: '#eee4f6',
+  muted: '#b6aaca',
+  line: '#514869',
+  accent: '#ccabeb',
+  soft: '#453956',
+  hover: '#453f60',
+  dark: true,
+};
+const aurora: Palette = {
+  background: '#152b2e',
+  surface: '#1e383c',
+  raised: '#2b4a4e',
+  paper: '#244145',
+  text: '#dbefeb',
+  muted: '#a1c5bd',
+  line: '#3b6060',
+  accent: '#89d0c4',
+  soft: '#305354',
+  hover: '#35575b',
+  dark: true,
+};
+Object.assign(codeStyles, { Nebula: nebula, Aurora: aurora, Mist: writeStyles.Mist, Sage: writeStyles.Sage });
+Object.assign(writeStyles, {
+  Graphite: codeStyles.Graphite,
+  Midnight: codeStyles.Midnight,
+  Nebula: nebula,
+  Aurora: aurora,
+});
+
+export function themeGroups(styles: Record<string, Palette>) {
+  return {
+    'Dark themes': Object.keys(styles).filter((name) => styles[name].dark),
+    'Light themes': Object.keys(styles).filter((name) => !styles[name].dark),
+  };
+}
+
 export function paletteFor(mode: Mode, settings: Settings): Palette {
   return mode === 'code'
     ? codeStyles[settings.codeStyle] || codeStyles.Graphite
@@ -121,5 +163,9 @@ export function applyAppearance(mode: Mode, settings: Settings) {
   };
   for (const [key, value] of Object.entries(values)) document.body.style.setProperty(`--${key}`, value);
   document.body.style.colorScheme = palette.dark ? 'dark' : 'light';
+  document.body.dataset.theme = mode === 'code' ? settings.codeStyle : settings.writeStyle;
+  document.body.dataset.scheme = palette.dark ? 'dark' : 'light';
+  const pattern = `radial-gradient(ellipse at 14% 12%, ${palette.accent}${palette.dark ? '19' : '1a'}, transparent 44%), radial-gradient(ellipse at 85% 72%, ${palette.dark ? '#b39ce61a' : '#8d9dc51a'}, transparent 46%)`;
+  document.body.style.setProperty('--ambient-pattern', pattern);
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', palette.surface);
 }

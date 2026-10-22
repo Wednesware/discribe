@@ -69,15 +69,27 @@ mixed-content restrictions prevent an HTTPS editor from joining an HTTP host.
   animations, reduced motion, and collaboration display name in Settings.
 - All fonts and editor dependencies ship in the generated assets; no CDN is used.
 
-Code/Write is a visual toggle: it changes the appearance of the current workspace
-without switching files, changing editor engines, or converting document formats.
-Code files keep Monaco and rich-text files keep BlockNote in either appearance.
-Preferences offer independent Code styles (Graphite, Midnight, Slate) and Write
-styles (Grey blue, Mist, Sage). Grey blue is the default Write appearance.
-Each document retains its editor, undo history, and unsaved state. Markdown opens
-as source; its document menu offers **Create a rich-text copy**, preserving the original. Markdown export
-from BlockNote can simplify unsupported formatting. `.discribe` files preserve
-BlockNote's structured representation and embedded attachments.
+Code/Write switches the current file between Monaco source editing and BlockNote
+writing without opening a different tab. Markdown files display headings, lists,
+and formatting in Write, and their Markdown source in Code. Other text/code files
+use literal paragraphs in Write, preserving code and whitespace on unedited
+switches. Each editor keeps its undo history while its content is unchanged.
+
+New Write documents default to `.md` and save/export Markdown. Structured blocks
+and view snapshots also persist in the local workspace. Existing `.discribe`
+documents remain supported and can be edited as Markdown source in Code mode.
+BlockNote's Markdown conversion is not lossless for every rich-text feature:
+merely switching views preserves the original exactly; edits through a converted
+view can simplify formatting. Discribe keeps an original version and offers
+**Document actions → Export original version** when such edits occur. Use
+`.discribe` exports when you need the full structured rich-text representation.
+
+Preferences have separate Code and Write theme selectors, each grouped into
+**Dark themes** and **Light themes**. Code defaults to dark Graphite. Write defaults
+to a darker, colorful Grey blue; Nebula and Aurora offer purple and teal alternatives.
+Mist and Sage remain available as light choices for either mode. Themes include
+quiet, static ambient circles behind the editing surface; patterns never intercept
+input and respect reduced motion.
 
 Attachments up to 5 MiB are embedded as persistent data URLs. Documents are limited
 to 20 MiB. Export copies regularly if you clear browser data. Native workspace

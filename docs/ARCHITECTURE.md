@@ -18,11 +18,25 @@ mounts exclusively inside a Write adapter. Status updates avoid regenerating the
 sidebar on each keystroke. Styling lives in `frontend/style.css`, with separate
 mode palettes, coordinated transitions, responsive layouts, and reduced motion.
 
-The Code/Write toggle controls appearance independently of document type. It
-keeps the active document and adapter in place, preserving content, undo history,
-and collaboration bindings. `frontend/appearance.ts` defines the separately
-persisted Code and Write palettes and applies them to the shell, Monaco themes,
-and BlockNote themes. Document controls continue to follow the actual editor.
+The Code/Write toggle changes the editor engine on the current document.
+`frontend/document-view.ts` projects canonical document content into either engine,
+caches both views, and only converts content after edits. Markdown uses BlockNote's
+supported parser/exporter; other source files use literal paragraphs. Rich snapshots,
+exact source snapshots, and original-version backups persist alongside canonical
+content in both IndexedDB and SQLite. New Write files export `.md`; legacy
+`.discribe` documents preserve their structured storage format. File operations
+continue to follow canonical format, while toolbar and status controls follow the
+selected engine.
+
+Both native and projected views use the existing collaboration document root.
+Projected plain-source changes use incremental Y.Text diffs. Projected source
+editing of a structured session updates a live BlockNote collaborator; it never
+rehydrates an active Yjs fragment from an import snapshot. Viewer permissions apply
+to both engines.
+
+`frontend/appearance.ts` defines independent Code and Write theme preferences,
+with light/dark optgroups in each selector and darker defaults. CSS gradient
+circles provide static ambient patterns behind editor content.
 
 `frontend/storage.ts` uses IndexedDB transactions in a browser and registered
 Sulfur callbacks in desktop mode. Saves check revisions before replacing a record.

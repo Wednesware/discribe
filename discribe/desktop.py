@@ -36,6 +36,10 @@ class DesktopBridge:
             return None
         expected = digest(path) if save_as or known is None else known[1]
         text = json.dumps(asdict(doc), ensure_ascii=False, indent=2) if doc.kind == "write" else doc.content
+        if doc.kind == "write" and path.suffix.lower() in (".md", ".markdown"):
+            if doc.markdown is None:
+                raise ValueError("Markdown source is unavailable; save as .discribe to preserve the document")
+            text = doc.markdown
         atomic_write(path, text, expected)
         self.files[doc.id] = (path, digest(path))
         return {"name": path.name, "filePath": str(path)}

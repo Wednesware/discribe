@@ -1,18 +1,17 @@
 import './style.css';
-import { applyAppearance, codeStyles, writeStyles } from './appearance';
+import { applyAppearance, codeStyles, writeStyles, themeGroups } from './appearance';
 import { Storage } from './storage';
+import { DocumentView } from './document-view';
 import {
   defaults,
   languageFor,
   newDoc,
   textOf,
   validateDoc,
-  type Adapter,
   type Doc,
   type Mode,
   type Settings,
 } from './model';
-import type { CodeAdapter } from './editors/code';
 import type { WriteAdapter } from './editors/write';
 import type { SessionProvider } from './provider';
 
@@ -41,7 +40,9 @@ let query = '';
 let loadingVersion = 0;
 let saves: Promise<void> = Promise.resolve();
 const dirty = new Set<string>();
-const adapters = new Map<string, Adapter>();
+const adapters = new Map<string, DocumentView>();
+const viewCache = new Map<string, DocumentView>();
+const viewNodes = new Map<string, HTMLElement>();
 const containers = new Map<string, HTMLElement>();
 const autosaves = new Map<string, ReturnType<typeof setTimeout>>();
 let session: SessionProvider | undefined;
@@ -150,7 +151,7 @@ async function ask(heading: string, value = '', description = ''): Promise<strin
 
 function currentContent(doc: Doc) {
   const adapter = adapters.get(doc.id);
-  if (adapter) doc.content = adapter.getContent();
+  if (adapter) adapter.capture();
   return doc;
 }
 function persistUI() {
@@ -165,7 +166,7 @@ function applySettings() {
   document.body.classList.toggle('reduce-motion', settings.reducedMotion || !settings.animations);
   document.documentElement.style.setProperty('--write-width', `${settings.writeWidth}px`);
   document.documentElement.style.setProperty('--write-font', settings.writeFont);
-  for (const adapter of adapters.values()) adapter.configure(settings);
+  for (const adapter of viewCache.values()) adapter.configure(settings);
 }
 function render() {
   const doc = active();
@@ -187,13 +188,14 @@ function render() {
     ? `${dirty.size} unsaved document${dirty.size === 1 ? '' : 's'}`
     : 'All changes saved';
   $('#save-state').classList.toggle('unsaved', dirty.size > 0);
-  const codeDocument = doc?.kind === 'code';
+  const codeDocument = mode === 'code';
   $('#document-heading').hidden = codeDocument;
   $('#writing-page').hidden = codeDocument;
   $('#code-editor').hidden = !codeDocument;
   $<HTMLSelectElement>('#language-select').hidden = !codeDocument;
   $('#encoding-status').hidden = !codeDocument;
-  if (doc) $<HTMLSelectElement>('#language-select').value = doc.language;
+  $<HTMLSelectElement>('#language-select').disabled = doc?.kind === 'write';
+  if (doc) $<HTMLSelectElement>('#language-select').value = doc.kind === 'write' ? 'markdown' : doc.language;
   $('#document-kind').textContent = sharedId === activeId ? '◉  SHARED DOCUMENT' : '✎  WRITING';
   $('#selection-status').textContent = doc ? adapters.get(doc.id)?.selection() || '' : '';
   const list = $('#document-list');
@@ -271,48 +273,84 @@ function render() {
   const add = actionButton('+', newDialog, 'tab-add');
   add.setAttribute('aria-label', 'New document');
   tabbar.append(add);
-  for (const [id, node] of containers) node.hidden = id !== activeId;
+  for (const [key, node] of viewNodes) node.hidden = key !== `${activeId}:${mode}`;
   for (const b of document.querySelectorAll('.nav-item'))
     b.classList.toggle('active', b.getAttribute('data-action') === (recent ? 'recent' : 'all-documents'));
   updateConnection();
 }
 
-async function ensureAdapter(doc: Doc): Promise<Adapter> {
-  if (adapters.has(doc.id)) return adapters.get(doc.id)!;
-  const container = element('div', undefined, doc.kind === 'code' ? 'code-instance' : 'write-instance');
-  container.setAttribute('role', 'tabpanel');
-  container.setAttribute('aria-labelledby', `tab-${doc.id}`);
-  containers.set(doc.id, container);
-  (doc.kind === 'code' ? $('#code-editor') : $('#write-editor')).append(container);
-  const args = [
-    container,
-    doc,
-    settings,
-    () => changed(doc.id),
-    () => {
-      if (activeId === doc.id) $('#selection-status').textContent = adapters.get(doc.id)?.selection() || '';
-    },
-    sharedId === doc.id ? session : undefined,
-  ] as const;
-  try {
-    const adapter =
-      doc.kind === 'code'
-        ? new (await import('./editors/code')).CodeAdapter(...args)
-        : new (await import('./editors/write')).WriteAdapter(...args);
-    adapters.set(doc.id, adapter);
-    if (sharedId === doc.id && session?.role === 'viewer') adapter.setReadOnly(true);
-    if (doc.kind === 'write') await (adapter as WriteAdapter).ready;
-    return adapter;
-  } catch (error) {
-    container.remove();
-    containers.delete(doc.id);
-    throw error;
+function disposeViews(id: string) {
+  adapters.delete(id);
+  for (const viewMode of ['code', 'write']) {
+    const key = `${id}:${viewMode}`;
+    viewCache.get(key)?.dispose();
+    viewCache.delete(key);
+    viewNodes.get(key)?.remove();
+    viewNodes.delete(key);
   }
+  adapters.delete(id);
+  containers.delete(id);
+}
+async function ensureAdapter(doc: Doc, requestedMode: Mode = mode): Promise<DocumentView> {
+  const key = `${doc.id}:${requestedMode}`;
+  if (sharedId === doc.id && doc.kind === 'write' && requestedMode === 'code') {
+    const seed = session?.role === 'host' && session.doc.getXmlFragment('write').length === 0;
+    const original = structuredClone(doc.content);
+    const native = await ensureAdapter(doc, 'write');
+    if (seed) native.setContent(original);
+    doc.content = native.engine.getContent();
+  }
+  let view = viewCache.get(key);
+  if (view) {
+    view.syncFromDocument();
+  } else {
+    const container = element(
+      'div',
+      undefined,
+      requestedMode === 'code' ? 'code-instance' : 'write-instance',
+    );
+    container.hidden = requestedMode !== mode || activeId !== doc.id;
+    container.setAttribute('role', 'tabpanel');
+    container.setAttribute('aria-labelledby', `tab-${doc.id}`);
+    (requestedMode === 'code' ? $('#code-editor') : $('#write-editor')).append(container);
+    viewNodes.set(key, container);
+    try {
+      view = await DocumentView.create(
+        container,
+        doc,
+        requestedMode,
+        settings,
+        () => {
+          if (adapters.get(doc.id) === view) changed(doc.id);
+        },
+        () => {
+          if (activeId === doc.id)
+            $('#selection-status').textContent = adapters.get(doc.id)?.selection() || '';
+        },
+        (message) => notify(message),
+        sharedId === doc.id ? session : undefined,
+        viewCache.get(`${doc.id}:write`)?.engine as WriteAdapter | undefined,
+      );
+      viewCache.set(key, view);
+    } catch (error) {
+      container.remove();
+      viewNodes.delete(key);
+      throw error;
+    }
+  }
+  if (mode === view.mode) {
+    adapters.set(doc.id, view);
+    containers.set(doc.id, viewNodes.get(key)!);
+  }
+  if (sharedId === doc.id && session?.role === 'viewer') view.setReadOnly(true);
+  return view;
 }
 
 async function activate(id: string) {
   const doc = docs.find((d) => d.id === id);
   if (!doc) return;
+  const previous = active();
+  if (previous) currentContent(previous);
   const version = ++loadingVersion;
   activeId = id;
   workspace = doc.workspace;
@@ -336,11 +374,15 @@ async function nextTab(offset: number) {
 }
 async function switchMode(next: Mode) {
   if (mode === next) return;
+  const doc = active();
+  if (doc) currentContent(doc);
   mode = next;
   applySettings();
-  render();
-  await persistUI();
-  adapters.get(activeId)?.focus();
+  if (doc) await activate(doc.id);
+  else {
+    render();
+    await persistUI();
+  }
 }
 
 function changed(id: string) {
@@ -410,6 +452,8 @@ async function create(kind: Mode, name?: string) {
   docs.push(doc);
   dirty.add(doc.id);
   await save(doc);
+  mode = kind;
+  applySettings();
   await activate(doc.id);
   return doc;
 }
@@ -466,10 +510,7 @@ async function closeTab(id: string) {
   if (sharedId === id) await leaveSession();
   clearTimeout(autosaves.get(id));
   tabs = tabs.filter((t) => t !== id);
-  adapters.get(id)?.dispose();
-  adapters.delete(id);
-  containers.get(id)?.remove();
-  containers.delete(id);
+  disposeViews(id);
   if (activeId === id) {
     activeId = '';
     const next = tabs.at(-1);
@@ -504,7 +545,7 @@ async function rename(doc: Doc) {
   doc.name = name;
   if (doc.kind === 'code') {
     doc.language = languageFor(name);
-    (adapters.get(doc.id) as CodeAdapter | undefined)?.setLanguage(doc.language);
+    adapters.get(doc.id)?.setLanguage(doc.language);
   }
   dirty.add(doc.id);
   await save(doc);
@@ -557,7 +598,36 @@ function documentMenu(doc = active()) {
       'Monaco command palette',
       async () => {
         await activate(doc.id);
-        (adapters.get(doc.id) as CodeAdapter).palette();
+        if (mode !== 'code') await switchMode('code');
+        adapters.get(doc.id)?.palette();
+      },
+    ]);
+  if (doc.viewBackup)
+    entries.push([
+      'Export original version',
+      () => {
+        const original = doc.viewBackup!.content;
+        download(
+          doc.kind === 'write'
+            ? doc.name.replace(/\.[^.]+$/, '') + '-original.discribe'
+            : 'original-' + doc.name,
+          typeof original === 'string'
+            ? original
+            : JSON.stringify(
+                {
+                  ...doc,
+                  content: original,
+                  viewBackup: undefined,
+                  richView: undefined,
+                  sourceView: undefined,
+                  filePath: null,
+                  collaboration: null,
+                },
+                null,
+                2,
+              ),
+          typeof original === 'string' ? 'text/plain;charset=utf-8' : 'application/json',
+        );
       },
     ]);
   entries.push(['Delete document', () => deleteDoc(doc)]);
@@ -626,9 +696,13 @@ function download(name: string, content: string, mime: string) {
 async function exportDoc(doc = active(), markdown = false) {
   if (!doc) return;
   currentContent(doc);
-  if (doc.kind === 'write' && markdown) {
-    const content = await ((await ensureAdapter(doc)) as WriteAdapter).markdown();
-    download(title(doc) + '.md', content, 'text/markdown;charset=utf-8');
+  if (doc.kind === 'write' && (markdown || /\.(md|markdown)$/i.test(doc.name))) {
+    const content = await (await ensureAdapter(doc)).markdown();
+    download(
+      /\.(md|markdown)$/i.test(doc.name) ? doc.name : title(doc) + '.md',
+      content,
+      'text/markdown;charset=utf-8',
+    );
   } else if (doc.kind === 'write') {
     const portable = { ...doc, filePath: null, collaboration: null };
     download(
@@ -647,7 +721,7 @@ async function convertMarkdown(doc: Doc) {
   if (answer !== 'Create copy') return;
   currentContent(doc);
   const copy = await create('write', doc.name.replace(/\.[^.]+$/, '') + '.discribe');
-  await (adapters.get(copy.id) as WriteAdapter).importMarkdown(doc.content as string);
+  await adapters.get(copy.id)!.importMarkdown(doc.content as string);
   dirty.add(copy.id);
   await save(copy);
 }
@@ -660,7 +734,7 @@ function settingsDialog() {
     label: string,
     key: keyof Settings,
     type: 'text' | 'number' | 'checkbox' | 'select',
-    options?: string[],
+    options?: string[] | Record<string, string[]>,
     min?: number,
     max?: number,
   ) {
@@ -670,9 +744,17 @@ function settingsDialog() {
       type === 'select' ? (element('select') as HTMLSelectElement) : (element('input') as HTMLInputElement);
     input.setAttribute('aria-label', label);
     input.name = key;
-    if (type === 'select')
-      for (const value of options || []) (input as HTMLSelectElement).add(new Option(value, value));
-    else {
+    if (type === 'select') {
+      if (Array.isArray(options))
+        for (const value of options) (input as HTMLSelectElement).add(new Option(value, value));
+      else
+        for (const [label, values] of Object.entries(options || {})) {
+          const group = document.createElement('optgroup');
+          group.label = label;
+          for (const value of values) group.append(new Option(value, value));
+          input.append(group);
+        }
+    } else {
       (input as HTMLInputElement).type = type;
       if (min !== undefined) input.setAttribute('min', String(min));
       if (max !== undefined) input.setAttribute('max', String(max));
@@ -691,20 +773,20 @@ function settingsDialog() {
     form.append(row);
   }
   form.append(element('h3', 'Your workspace'));
-  field('Default appearance', 'defaultMode', 'select', ['write', 'code']);
+  field('Default editor mode', 'defaultMode', 'select', ['write', 'code']);
   field('Autosave', 'autosave', 'checkbox');
   field('Collapse sidebar', 'sidebarCollapsed', 'checkbox');
   field('Animations', 'animations', 'checkbox');
   field('Reduce motion', 'reducedMotion', 'checkbox');
   form.append(element('h3', 'Code editor'));
-  field('Code mode style', 'codeStyle', 'select', Object.keys(codeStyles));
+  field('Code mode style', 'codeStyle', 'select', themeGroups(codeStyles));
   field('Font family', 'fontFamily', 'text');
   field('Font size', 'fontSize', 'number', undefined, 10, 32);
   field('Tab size', 'tabSize', 'select', ['2', '4', '8']);
   field('Word wrap', 'wordWrap', 'checkbox');
   field('Minimap', 'minimap', 'checkbox');
   form.append(element('h3', 'Writing & collaboration'));
-  field('Write mode style', 'writeStyle', 'select', Object.keys(writeStyles));
+  field('Write mode style', 'writeStyle', 'select', themeGroups(writeStyles));
   field('Page width (px)', 'writeWidth', 'number', undefined, 480, 1200);
   field('Writing font', 'writeFont', 'select', ['Inter', 'Georgia', 'system-ui']);
   field('Display name', 'displayName', 'text');
@@ -794,25 +876,18 @@ async function connectSession(server: string, id: string, token: string, local?:
   if (local && metadata.kind === 'code' && provider.doc.getText('code').length === 0)
     provider.doc.getText('code').insert(0, initial as string);
   sharedId = doc.id;
-  if (doc.kind === 'code' && adapters.has(doc.id))
-    (adapters.get(doc.id) as CodeAdapter).bindSession(provider);
-  else {
-    adapters.get(doc.id)?.dispose();
-    adapters.delete(doc.id);
-    containers.get(doc.id)?.remove();
-    containers.delete(doc.id);
-  }
+  disposeViews(doc.id);
   await activate(doc.id);
   if (local && metadata.kind === 'write' && provider.doc.getXmlFragment('write').length === 0)
-    (adapters.get(doc.id) as WriteAdapter).setContent(initial as any[]);
+    adapters.get(doc.id)!.setContent(initial as any[]);
   // BlockNote may initialize an empty paragraph when mounting an empty Y fragment.
   if (
     local &&
     metadata.kind === 'write' &&
-    !textOf((adapters.get(doc.id) as WriteAdapter).getContent()).trim() &&
+    !textOf(adapters.get(doc.id)!.getContent()).trim() &&
     textOf(initial).trim()
   )
-    (adapters.get(doc.id) as WriteAdapter).setContent(initial as any[]);
+    adapters.get(doc.id)!.setContent(initial as any[]);
   dirty.add(doc.id);
   await save(doc);
   notify('You are connected. Changes sync automatically.');
@@ -830,13 +905,7 @@ async function leaveSession() {
     currentContent(doc);
     doc.collaboration = null;
   }
-  if (doc?.kind === 'code' && adapters.has(id)) (adapters.get(id) as CodeAdapter).unbindSession();
-  else {
-    adapters.get(id)?.dispose();
-    adapters.delete(id);
-    containers.get(id)?.remove();
-    containers.delete(id);
-  }
+  disposeViews(id);
   await old.destroy();
   if (doc) {
     dirty.add(doc.id);
@@ -990,7 +1059,7 @@ const actions: Record<string, () => void | Promise<void>> = {
   undo: () => adapters.get(activeId)?.undo(),
   redo: () => adapters.get(activeId)?.redo(),
   find: async () => {
-    if (active()?.kind === 'code') (adapters.get(activeId) as CodeAdapter | undefined)?.find();
+    if (mode === 'code') adapters.get(activeId)?.find();
     else {
       const text = await ask('Find in document', '', 'Search the text on this page.');
       if (text) (window as Window & { find?: (text: string) => boolean }).find?.(text);
@@ -1039,7 +1108,7 @@ $<HTMLSelectElement>('#language-select').onchange = (event) =>
     const doc = active();
     if (!doc || doc.kind !== 'code') return;
     doc.language = (event.target as HTMLSelectElement).value;
-    (adapters.get(doc.id) as CodeAdapter).setLanguage(doc.language);
+    adapters.get(doc.id)?.setLanguage(doc.language);
     dirty.add(doc.id);
     await save(doc);
   });
@@ -1064,7 +1133,7 @@ document.addEventListener(
       fn = () => {
         $('#document-search').focus();
       };
-    if (key === 'f' && active()?.kind === 'write') return; // browser find works in rich text
+    if (key === 'f' && mode === 'write') return; // browser find works in rich text
     if (fn) {
       event.preventDefault();
       event.stopPropagation();
