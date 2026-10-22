@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "module": "ESNext", "moduleResolution": "bundler",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"], "jsx": "react-jsx",
+    "strict": true, "skipLibCheck": true, "allowSyntheticDefaultImports": true,
+    "noEmit": true
+  },
+  "include": ["frontend/**/*.ts", "frontend/**/*.tsx", "tests/**/*.ts"]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "discribe-editors",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "bundle": "node tools/bundle.mjs",
+    "build": "npm run bundle && .venv/bin/python -m discribe build",
+    "typecheck": "tsc --noEmit",
+    "test": "playwright test",
+    "format": "prettier --write frontend tools tests/browser playwright.config.ts",
+    "format:check": "prettier --check frontend tools tests/browser playwright.config.ts"
+  },
+  "dependencies": {
+    "@blocknote/core": "^0.51.0",
+    "@blocknote/mantine": "^0.51.0",
+    "@blocknote/react": "^0.51.0",
+    "@fontsource/inter": "^5.2.0",
+    "@fontsource/jetbrains-mono": "^5.2.0",
+    "@mantine/core": "^8.3.0",
+    "@mantine/hooks": "^8.3.0",
+    "@mantine/utils": "^6.0.0",
+    "monaco-editor": "^0.57.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "y-indexeddb": "^9.0.12",
+    "y-monaco": "^0.1.6",
+    "y-protocols": "^1.0.6",
+    "yjs": "^13.6.27"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "esbuild": "^0.25.11",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3"
+  }
+}

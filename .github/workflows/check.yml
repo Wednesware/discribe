@@ -1,0 +1,56 @@
+name: Verify Discribe
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  editor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: python -m venv .venv
+      - run: .venv/bin/pip install -e '.[test,collaboration]'
+      - run: .venv/bin/n2 get fluorine && .venv/bin/n2 get magnesium && .venv/bin/n2 get beryllium
+      - run: npm ci
+      - run: npm run typecheck
+      - run: .venv/bin/python -m pytest tests/test_core.py tests/test_collaboration.py -q
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failures
+          path: test-results/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: discribe-web
+          path: dist/
+  desktop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: sudo apt-get update && sudo apt-get install -y xvfb libegl1 libopengl0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 libxcb-xinerama0
+      - run: python -m venv .venv
+      - run: .venv/bin/pip install -e '.[desktop]'
+      - run: .venv/bin/n2 get fluorine && .venv/bin/n2 get magnesium && .venv/bin/n2 get sulfur
+      - run: npm ci && npm run build
+      - run: xvfb-run -a .venv/bin/python tests/desktop_smoke.py
