@@ -79,6 +79,8 @@ and formatting in Write, and their Markdown source in Code. Other text/code file
 use literal paragraphs in Write, preserving code and whitespace on unedited
 switches. Each editor keeps its undo history while its content is unchanged.
 
+New document creates a blank file in the current editor without a mode prompt.
+Use **Open file…** in the sidebar or Ctrl/Cmd+O to open an existing file.
 New Write documents default to `.md` and save/export Markdown. Structured blocks
 and view snapshots also persist in the local workspace. Existing `.discribe`
 documents remain supported and can be edited as Markdown source in Code mode.

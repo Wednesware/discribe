@@ -210,11 +210,7 @@ function render() {
   for (const item of filtered) {
     const row = element('div', undefined, `document-row ${item.id === activeId ? 'selected' : ''}`);
     const b = actionButton('', () => activate(item.id), 'document-link');
-    b.append(
-      element('span', item.kind === 'code' ? '〈〉' : '▤', `file-icon ${item.kind}`),
-      element('span', title(item)),
-      element('span', dirty.has(item.id) ? '•' : '', 'dirty-dot'),
-    );
+    b.append(element('span', title(item)), element('span', dirty.has(item.id) ? '•' : '', 'dirty-dot'));
     b.title = item.name;
     b.setAttribute('aria-label', `Open ${item.name}`);
     const menu = actionButton('⋯', () => documentMenu(item), 'row-menu');
@@ -241,10 +237,7 @@ function render() {
     if (!item) continue;
     const tab = element('div', undefined, `tab ${id === activeId ? 'active' : ''}`);
     tab.draggable = true;
-    const b = actionButton(
-      `${item.kind === 'code' ? '〈〉' : '▤'}  ${title(item)}${dirty.has(id) ? ' •' : ''}`,
-      () => activate(id),
-    );
+    const b = actionButton(`${title(item)}${dirty.has(id) ? ' •' : ''}`, () => activate(id));
     b.setAttribute('role', 'tab');
     b.setAttribute('aria-selected', String(id === activeId));
     b.id = `tab-${id}`;
@@ -270,7 +263,7 @@ function render() {
     };
     tabbar.append(tab);
   }
-  const add = actionButton('+', newDialog, 'tab-add');
+  const add = actionButton('+', newDocument, 'tab-add');
   add.setAttribute('aria-label', 'New document');
   tabbar.append(add);
   for (const [key, node] of viewNodes) node.hidden = key !== `${activeId}:${mode}`;
@@ -457,35 +450,8 @@ async function create(kind: Mode, name?: string) {
   await activate(doc.id);
   return doc;
 }
-async function newDialog() {
-  const dlg = dialog('Make room for an idea', 'Start with a blank page or a fresh line of code.');
-  const choices = element('div', undefined, 'new-choices');
-  for (const [kind, name, description] of [
-    ['write', '✎  Write document', 'Notes, stories, plans, and everything in between.'],
-    ['code', '〈〉  Code document', 'A focused editor for your next great build.'],
-  ] as const) {
-    const b = actionButton(
-      '',
-      async () => {
-        dlg.close();
-        await create(kind);
-      },
-      'new-choice',
-    );
-    b.append(element('strong', name), element('span', description));
-    choices.append(b);
-  }
-  dlg.append(
-    choices,
-    actionButton(
-      '↥  Open an existing file',
-      async () => {
-        dlg.close();
-        await openFiles();
-      },
-      'secondary',
-    ),
-  );
+async function newDocument() {
+  await create(mode);
 }
 
 async function closeTab(id: string) {
@@ -1053,7 +1019,8 @@ const actions: Record<string, () => void | Promise<void>> = {
     await storage.settings(settings);
   },
   settings: settingsDialog,
-  new: newDialog,
+  new: newDocument,
+  open: openFiles,
   'document-menu': () => documentMenu(),
   export: () => exportDoc(),
   undo: () => adapters.get(activeId)?.undo(),

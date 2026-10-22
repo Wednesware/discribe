@@ -393,7 +393,10 @@ for (const nativeKind of ['markdown', 'rich']) {
 
 test('new Write documents export real Markdown and use the same source in Code', async ({ page }) => {
   await ready(page);
-  await page.keyboard.press('Control+n');
+  await page.getByRole('button', { name: '+ New document', exact: true }).click();
+  await expect(page.locator('#app-dialog')).not.toBeVisible();
+  await expect(page.locator('.file-icon')).toHaveCount(0);
+  await expect(page.getByRole('tab').filter({ hasText: /〈〉|▤/ })).toHaveCount(0);
   await expect(page.locator('#breadcrumb-name')).toHaveText('Untitled.md');
   await expect(page.locator('#editor-loading')).toBeHidden();
   await page.locator('.bn-editor:visible').click();
