@@ -63,7 +63,8 @@ mixed-content restrictions prevent an HTTPS editor from joining an HTTP host.
 
 ## GitHub Pages
 
-The browser edition is published at https://wednesware.github.io/discribe/.
+The browser edition is published at https://discribe.wednesware.org/
+(GitHub Pages URL: https://wednesware.github.io/discribe/).
 The `Deploy Discribe to GitHub Pages` workflow builds and checks the static site,
 then deploys `dist/` using GitHub's official Pages artifact/deployment actions.
 It runs on pushes to `main`, release tags named `pages-*`, or a manual run from
