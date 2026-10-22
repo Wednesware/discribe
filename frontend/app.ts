@@ -1171,6 +1171,11 @@ async function start() {
   await storage.open();
   settings = await storage.settings();
   docs = await storage.list();
+  const startupDocuments = (await storage.startupDocuments()).map(validateDoc);
+  for (const doc of startupDocuments) {
+    docs.push(doc);
+    await save(doc);
+  }
   const ui = await storage.ui();
   mode = ui?.mode === 'code' || ui?.mode === 'write' ? ui.mode : settings.defaultMode;
   if (!ui && matchMedia('(max-width: 800px)').matches) {
@@ -1248,8 +1253,12 @@ async function start() {
   }
   workspace = ui?.workspace || 'Personal';
   tabs = (ui?.tabs || []).filter((id: string) => docs.some((d) => d.id === id));
+  for (const doc of startupDocuments) if (!tabs.includes(doc.id)) tabs.push(doc.id);
   const initial =
-    docs.find((d) => d.id === ui?.activeId) || docs.find((d) => d.kind === settings.defaultMode) || docs[0];
+    startupDocuments.at(-1) ||
+    docs.find((d) => d.id === ui?.activeId) ||
+    docs.find((d) => d.kind === settings.defaultMode) ||
+    docs[0];
   await activate(initial.id);
   if ('BroadcastChannel' in window) {
     channel = new BroadcastChannel('discribe');

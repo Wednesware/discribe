@@ -24,7 +24,7 @@ jobs:
       - run: .venv/bin/n2 get fluorine && .venv/bin/n2 get magnesium && .venv/bin/n2 get beryllium
       - run: npm ci
       - run: npm run typecheck
-      - run: .venv/bin/python -m pytest tests/test_core.py tests/test_collaboration.py -q
+      - run: .venv/bin/python -m pytest tests/test_core.py tests/test_collaboration.py tests/test_cli.py -q
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm test

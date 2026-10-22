@@ -7,10 +7,19 @@ from .core import Document, DocumentStore, atomic_write, digest, read_document
 
 
 class DesktopBridge:
-    def __init__(self, directory: Path):
+    def __init__(self, directory: Path, startup_files=()):
         self.store = DocumentStore(directory)
-        # Only native user selections authorize paths, never JavaScript arguments.
+        # Native selections and explicit CLI arguments authorize paths; JavaScript cannot.
         self.files: dict[str, tuple[Path, str | None]] = {}
+        self._startup_documents = []
+        for path in dict.fromkeys(Path(value).expanduser().resolve() for value in startup_files):
+            doc = read_document(path)
+            self.files[doc.id] = (path, digest(path))
+            self._startup_documents.append(asdict(doc))
+
+    def startup_documents(self):
+        documents, self._startup_documents = self._startup_documents, []
+        return documents
 
     @staticmethod
     def dialog(save=False, name="Untitled.txt"):
@@ -45,6 +54,6 @@ class DesktopBridge:
         return {"name": path.name, "filePath": str(path)}
 
     def callbacks(self):
-        return {"list_documents": self.store.list, "save_document": self.store.save,
+        return {"startup_documents": self.startup_documents, "list_documents": self.store.list, "save_document": self.store.save,
                 "delete_document": self.store.delete, "settings": self.store.settings,
                 "open_file": self.open_file, "write_file": self.write_file}

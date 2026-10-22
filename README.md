@@ -36,6 +36,10 @@ against Fluorine 26.7, Sulfur 26.9, and Beryllium's current WebSocket Host API.
 # Native desktop application
 python -m discribe desktop
 
+# Open files directly (quotes handle spaces; multiple files open as tabs)
+discribe ./notes.md "./my project/main.py"
+# Equivalent: python -m discribe desktop ./notes.md
+
 # Browser edition: a static server, no application backend needed
 python -m discribe web --port 8080
 

@@ -50,6 +50,9 @@ export class Storage {
       });
     this.native = nativeReady();
   }
+  async startupDocuments(): Promise<Doc[]> {
+    return this.native ? (await window.pywebview!.api.startup_documents?.()) || [] : [];
+  }
   async list(): Promise<Doc[]> {
     if (this.native) return window.pywebview!.api.list_documents();
     return request(this.db.transaction('documents').objectStore('documents').getAll());
