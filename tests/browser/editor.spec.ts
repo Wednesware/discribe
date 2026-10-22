@@ -344,7 +344,7 @@ test('independent light, mixed, and dark theme groups persist with dark colorful
   await page.reload();
   await expect(page.locator('#editor-loading')).toBeHidden();
   await expect(page.locator('body')).toHaveAttribute('data-theme', 'Pewter');
-  await expect(page.locator('#code-editor')).toHaveCSS('background-color', 'rgb(187, 195, 203)');
+  await expect(page.locator('#code-editor')).toHaveCSS('background-color', 'rgb(172, 184, 195)');
   await page.getByRole('button', { name: '✎ Write', exact: true }).click();
   await expect(page.locator('.bn-editor:visible')).toBeVisible();
   await expect(page.locator('body')).toHaveAttribute('data-theme-family', 'mixed');
