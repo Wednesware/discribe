@@ -17,10 +17,6 @@ Requires Python 3.12+, Node.js 22+, and the supplied Nitrogen installation.
 python -m venv .venv
 . .venv/bin/activate
 pip install -e '.[desktop,collaboration]'
-n2 get fluorine
-n2 get sulfur
-n2 get beryllium
-n2 get magnesium
 npm ci
 npm run build
 ```
