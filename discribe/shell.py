@@ -18,7 +18,9 @@ def create_page(asset_prefix="./"):
     def toolbar():
         return E("header",
             E("div", icon("☰", "sidebar", "Toggle sidebar"),
-              E("a", E("span", "d", class_="brand-mark"), "discribe", href="#", class_="brand"),
+              E("a", E("img", src=asset_prefix + "branding/discribe-white.png", alt="", class_="brand-logo brand-logo-white"),
+                E("img", src=asset_prefix + "branding/discribe-black.png", alt="", class_="brand-logo brand-logo-black"),
+                href="#", class_="brand", aria_label="Discribe"),
               E("span", "YOUR SPACE TO CREATE", class_="brand-caption"), class_="brand-group"),
             E("div", E("span", class_="mode-pill"),
               button("⌘  Code", "mode-code", cls="mode-button", aria_pressed="false"),

@@ -145,23 +145,24 @@ p {
 .brand {
   display: flex;
   align-items: center;
-  gap: 9px;
-  font-size: 23px;
-  font-weight: 600;
-  letter-spacing: -1.1px;
+  flex-shrink: 0;
 }
-.brand-mark {
-  width: 30px;
-  height: 33px;
-  color: white;
-  background: var(--accent);
-  border-radius: 10px 10px 10px 3px;
-  display: grid;
-  place-items: center;
-  font-size: 27px;
-  font-weight: 500;
-  line-height: 1;
-  padding-bottom: 3px;
+.brand-logo {
+  width: 148px;
+  height: 36px;
+  object-fit: cover;
+  /* Frame the wordmark within the supplied square transparent artwork. */
+  object-position: 50% 50.9%;
+  display: block;
+}
+.brand-logo-black {
+  display: none;
+}
+body[data-scheme='light'] .brand-logo-white {
+  display: none;
+}
+body[data-scheme='light'] .brand-logo-black {
+  display: block;
 }
 .brand-caption {
   font-size: 8px;
@@ -727,9 +728,6 @@ body[data-mode='code'] .mode-switch {
   background: var(--accent-soft);
   border-color: var(--line);
 }
-body[data-mode='code'] .brand-mark {
-  color: #191a25;
-}
 body[data-mode='code'] .mode-button {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
@@ -996,19 +994,15 @@ dialog form > input {
   .workspace-layout {
     height: calc(100dvh - 65px);
   }
-  .brand {
-    font-size: 20px;
+  .brand-logo {
+    width: 108px;
+    height: 27px;
   }
   .brand-group {
     gap: 5px;
   }
   .brand-group > .icon-button {
     display: inline-grid;
-  }
-  .brand-mark {
-    width: 25px;
-    height: 28px;
-    font-size: 23px;
   }
   .collaborate-button {
     font-size: 0;
@@ -1115,12 +1109,9 @@ dialog form > input {
   }
 }
 @media (max-width: 430px) {
-  .brand {
-    font-size: 0;
-    gap: 0;
-  }
-  .brand-mark {
-    font-size: 23px;
+  .brand-logo {
+    width: 66px;
+    height: 18px;
   }
   .mode-switch {
     left: 52%;
