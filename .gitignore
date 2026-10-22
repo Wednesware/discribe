@@ -1,0 +1,13 @@
+.venv/
+node_modules/
+dist/
+build/
+discribe/web/assets/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+test-results/
+playwright-report/
+.DS_Store
+.discribe/
