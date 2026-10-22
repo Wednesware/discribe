@@ -18,6 +18,12 @@ mounts exclusively inside a Write adapter. Status updates avoid regenerating the
 sidebar on each keystroke. Styling lives in `frontend/style.css`, with separate
 mode palettes, coordinated transitions, responsive layouts, and reduced motion.
 
+The Code/Write toggle controls appearance independently of document type. It
+keeps the active document and adapter in place, preserving content, undo history,
+and collaboration bindings. `frontend/appearance.ts` defines the separately
+persisted Code and Write palettes and applies them to the shell, Monaco themes,
+and BlockNote themes. Document controls continue to follow the actual editor.
+
 `frontend/storage.ts` uses IndexedDB transactions in a browser and registered
 Sulfur callbacks in desktop mode. Saves check revisions before replacing a record.
 The client serializes save requests and only clears dirty state if no newer edits

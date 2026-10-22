@@ -2,6 +2,7 @@ import * as monaco from 'monaco-editor';
 import { MonacoBinding } from 'y-monaco';
 import type { Adapter, Doc, Settings } from '../model';
 import type { SessionProvider } from '../provider';
+import { paletteFor } from '../appearance';
 
 window.MonacoEnvironment = {
   getWorker(_: string, label: string) {
@@ -17,27 +18,6 @@ window.MonacoEnvironment = {
     return new Worker(new URL(`../${worker}.worker.js`, import.meta.url), { type: 'module' });
   },
 };
-monaco.editor.defineTheme('discribe', {
-  base: 'vs-dark',
-  inherit: true,
-  rules: [
-    { token: 'comment', foreground: '737e95', fontStyle: 'italic' },
-    { token: 'keyword', foreground: 'b3a2ec' },
-    { token: 'string', foreground: 'a5c6ac' },
-    { token: 'number', foreground: 'dfb990' },
-    { token: 'type.identifier', foreground: '8fb7dc' },
-  ],
-  colors: {
-    'editor.background': '#16181f',
-    'editor.foreground': '#d5d9e4',
-    'editorLineNumber.foreground': '#555d70',
-    'editorLineNumber.activeForeground': '#b9b2de',
-    'editor.selectionBackground': '#53517666',
-    'editor.lineHighlightBackground': '#ffffff04',
-    'editorCursor.foreground': '#b3a2ec',
-    'editorWidget.background': '#222531',
-  },
-});
 
 export class CodeAdapter implements Adapter {
   editor: monaco.editor.IStandaloneCodeEditor;
@@ -59,7 +39,7 @@ export class CodeAdapter implements Adapter {
     );
     this.editor = monaco.editor.create(container, {
       model: this.model,
-      theme: 'discribe',
+      theme: 'vs-dark',
       automaticLayout: true,
       padding: { top: 24, bottom: 24 },
       scrollBeyondLastLine: false,
@@ -77,6 +57,40 @@ export class CodeAdapter implements Adapter {
     this.editor.onDidChangeCursorSelection(onSelection);
   }
   configure(s: Settings) {
+    const mode = document.body.dataset.mode === 'code' ? 'code' : 'write';
+    const palette = paletteFor(mode, s);
+    const theme = `discribe-${mode}-${mode === 'code' ? s.codeStyle : s.writeStyle}`.replace(
+      /[^a-z0-9-]/gi,
+      '-',
+    );
+    monaco.editor.defineTheme(theme, {
+      base: palette.dark ? 'vs-dark' : 'vs',
+      inherit: true,
+      rules: palette.dark
+        ? [
+            { token: 'comment', foreground: '929db3', fontStyle: 'italic' },
+            { token: 'keyword', foreground: 'c5b4ed' },
+            { token: 'string', foreground: 'a5ceaf' },
+          ]
+        : [
+            { token: 'comment', foreground: '546b77', fontStyle: 'italic' },
+            { token: 'keyword', foreground: '654381' },
+            { token: 'string', foreground: '2c6655' },
+          ],
+      colors: {
+        'editor.background': palette.background,
+        'editor.foreground': palette.text,
+        'editorLineNumber.foreground': palette.muted,
+        'editorLineNumber.activeForeground': palette.text,
+        'editor.selectionBackground': palette.accent + '44',
+        'editorCursor.foreground': palette.accent,
+        'editor.lineHighlightBackground': palette.soft + '55',
+        'editorWidget.background': palette.raised,
+        'editorSuggestWidget.background': palette.raised,
+        'editorSuggestWidget.foreground': palette.text,
+      },
+    });
+    monaco.editor.setTheme(theme);
     this.editor.updateOptions({
       fontFamily: s.fontFamily,
       fontSize: s.fontSize,

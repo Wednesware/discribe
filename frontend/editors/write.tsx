@@ -5,6 +5,7 @@ import { BlockNoteView } from '@blocknote/mantine';
 import type { Adapter, Doc, Settings } from '../model';
 import { textOf } from '../model';
 import type { SessionProvider } from '../provider';
+import { paletteFor } from '../appearance';
 import '@blocknote/core/fonts/inter.css';
 import '@blocknote/mantine/style.css';
 
@@ -14,6 +15,7 @@ export class WriteAdapter implements Adapter {
   ready: Promise<void>;
   private saved = '';
   private readonly = false;
+  private settings!: Settings;
   constructor(
     container: HTMLElement,
     doc: Doc,
@@ -47,18 +49,32 @@ export class WriteAdapter implements Adapter {
       this.editor.onMount(() => resolve());
     });
     this.root = createRoot(container);
-    this.render();
     this.configure(settings);
     this.saved = this.serialize();
     this.editor.onChange(onChange);
     this.editor.onSelectionChange(onSelection);
   }
   private render() {
-    this.root.render(<BlockNoteView editor={this.editor} theme="light" editable={!this.readonly} />);
+    const palette = paletteFor(document.body.dataset.mode === 'code' ? 'code' : 'write', this.settings);
+    const theme = {
+      colors: {
+        editor: { text: palette.text, background: palette.paper },
+        menu: { text: palette.text, background: palette.raised },
+        tooltip: { text: palette.text, background: palette.raised },
+        hovered: { text: palette.text, background: palette.hover },
+        selected: { text: palette.text, background: palette.soft },
+        border: palette.line,
+        sideMenu: palette.muted,
+      },
+      fontFamily: this.settings.writeFont,
+    };
+    this.root.render(<BlockNoteView editor={this.editor} theme={theme} editable={!this.readonly} />);
   }
   configure(s: Settings) {
+    this.settings = s;
     document.documentElement.style.setProperty('--write-width', `${s.writeWidth}px`);
     document.documentElement.style.setProperty('--write-font', s.writeFont);
+    this.render();
   }
   setReadOnly(value: boolean) {
     this.readonly = value;

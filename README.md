@@ -69,9 +69,13 @@ mixed-content restrictions prevent an HTTPS editor from joining an HTTP host.
   animations, reduced motion, and collaboration display name in Settings.
 - All fonts and editor dependencies ship in the generated assets; no CDN is used.
 
-Code/Write switches environments without converting documents. Each document
-retains its own editor and unsaved state. Markdown opens as source; its document
-menu offers **Create a rich-text copy**, preserving the original. Markdown export
+Code/Write is a visual toggle: it changes the appearance of the current workspace
+without switching files, changing editor engines, or converting document formats.
+Code files keep Monaco and rich-text files keep BlockNote in either appearance.
+Preferences offer independent Code styles (Graphite, Midnight, Slate) and Write
+styles (Grey blue, Mist, Sage). Grey blue is the default Write appearance.
+Each document retains its editor, undo history, and unsaved state. Markdown opens
+as source; its document menu offers **Create a rich-text copy**, preserving the original. Markdown export
 from BlockNote can simplify unsupported formatting. `.discribe` files preserve
 BlockNote's structured representation and embedded attachments.
 

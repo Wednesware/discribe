@@ -16,6 +16,8 @@ export interface Doc {
 }
 export interface Settings {
   defaultMode: Mode;
+  codeStyle: string;
+  writeStyle: string;
   fontFamily: string;
   fontSize: number;
   tabSize: number;
@@ -31,6 +33,8 @@ export interface Settings {
 }
 export const defaults: Settings = {
   defaultMode: 'write',
+  codeStyle: 'Graphite',
+  writeStyle: 'Grey blue',
   fontFamily: 'JetBrains Mono',
   fontSize: 14,
   tabSize: 4,

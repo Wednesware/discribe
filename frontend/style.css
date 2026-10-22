@@ -8,18 +8,18 @@
 :root {
   font-family: Inter, system-ui, sans-serif;
   color: #35445c;
-  background: #eaf0f8;
+  background: #bfcbd9;
   font-synthesis: none;
-  --bg: #eaf0f8;
-  --surface: #f1f5fb;
-  --surface-raised: #f8faff;
-  --paper: #fff;
-  --text: #35445c;
-  --muted: #7b8aa1;
-  --line: #dce4ef;
-  --accent: #6b83ae;
-  --accent-soft: #dfe7f5;
-  --hover: #e5ecf7;
+  --bg: #bfcbd9;
+  --surface: #cbd5e1;
+  --surface-raised: #dbe3ed;
+  --paper: #d1dbe6;
+  --text: #30445e;
+  --muted: #536a83;
+  --line: #a9bacd;
+  --accent: #526e9c;
+  --accent-soft: #b8c8df;
+  --hover: #bccbde;
   --sidebar: 272px;
   --write-width: 820px;
   --write-font: Inter;
@@ -732,8 +732,8 @@ body[data-mode='code'] .mode-pill {
   transform: translateX(0);
 }
 body[data-mode='code'] .mode-switch {
-  background: #12151d;
-  border-color: #303446;
+  background: var(--accent-soft);
+  border-color: var(--line);
 }
 body[data-mode='code'] .brand-mark {
   color: #191a25;
@@ -743,23 +743,23 @@ body[data-mode='code'] .mode-button {
   font-size: 11px;
 }
 body[data-mode='code'] .editor-stage {
-  background: #16181f;
+  background: var(--bg);
 }
 body[data-mode='code'] .collaborate-button {
-  border-color: #3f3958;
-  color: #b5a7da;
+  border-color: var(--line);
+  color: var(--text);
 }
 body[data-mode='code'] .local-note {
-  background: linear-gradient(135deg, #262a3c, #202330);
-  border-color: #30364b;
+  background: var(--accent-soft);
+  border-color: var(--line);
 }
 body[data-mode='code'] .workspace-avatar {
-  background: #302e44;
-  color: #b3a4d6;
-  border-color: #423b59;
+  background: var(--accent-soft);
+  color: var(--text);
+  border-color: var(--line);
 }
 body[data-mode='code'] .new-document {
-  border-color: #34394a;
+  border-color: var(--line);
 }
 body[data-mode='code'] .document-link {
   font-family: 'JetBrains Mono', monospace;
@@ -1191,4 +1191,45 @@ body.reduce-motion *::after {
 }
 .brand-group > .icon-button {
   display: inline-grid;
+}
+
+/* Both editor engines follow the selected visual environment. */
+body .editor-stage {
+  background: var(--bg);
+}
+body .mode-switch {
+  background: var(--accent-soft);
+  border-color: var(--line);
+}
+body .collaborate-button {
+  color: var(--text);
+  border-color: var(--line);
+}
+body .local-note {
+  background: var(--accent-soft);
+  border-color: var(--line);
+}
+body .workspace-avatar {
+  background: var(--accent-soft);
+  color: var(--text);
+  border-color: var(--line);
+}
+body .new-document {
+  border-color: var(--line);
+}
+body .writing-page {
+  border-color: var(--line);
+}
+body .document-heading h1,
+body .write-instance .bn-editor,
+body .write-instance .bn-block-content h2,
+body .write-instance .bn-block-content h3 {
+  color: var(--text);
+}
+body .document-heading > .eyebrow,
+body .document-meta,
+body .document-meta > span:first-child,
+body .write-instance [data-content-type='quote'],
+body .write-instance .bn-side-menu {
+  color: var(--muted);
 }

@@ -1,4 +1,5 @@
 import './style.css';
+import { applyAppearance, codeStyles, writeStyles } from './appearance';
 import { Storage } from './storage';
 import {
   defaults,
@@ -153,12 +154,13 @@ function currentContent(doc: Doc) {
   return doc;
 }
 function persistUI() {
-  void storage
+  return storage
     .ui({ tabs, activeId, workspace, mode })
     .catch((error) => notify(`Cannot save workspace state: ${error}`, true));
 }
 
 function applySettings() {
+  applyAppearance(mode, settings);
   document.body.classList.toggle('sidebar-collapsed', settings.sidebarCollapsed);
   document.body.classList.toggle('reduce-motion', settings.reducedMotion || !settings.animations);
   document.documentElement.style.setProperty('--write-width', `${settings.writeWidth}px`);
@@ -167,7 +169,7 @@ function applySettings() {
 }
 function render() {
   const doc = active();
-  document.body.dataset.mode = mode;
+  applyAppearance(mode, settings);
   document.title = `${doc ? title(doc) + ' — ' : ''}Discribe`;
   for (const button of document.querySelectorAll<HTMLButtonElement>('.mode-button'))
     button.setAttribute('aria-pressed', String(button.dataset.action === `mode-${mode}`));
@@ -185,11 +187,12 @@ function render() {
     ? `${dirty.size} unsaved document${dirty.size === 1 ? '' : 's'}`
     : 'All changes saved';
   $('#save-state').classList.toggle('unsaved', dirty.size > 0);
-  $('#document-heading').hidden = mode === 'code';
-  $('#writing-page').hidden = mode === 'code';
-  $('#code-editor').hidden = mode !== 'code';
-  $<HTMLSelectElement>('#language-select').hidden = mode !== 'code';
-  $('#encoding-status').hidden = mode !== 'code';
+  const codeDocument = doc?.kind === 'code';
+  $('#document-heading').hidden = codeDocument;
+  $('#writing-page').hidden = codeDocument;
+  $('#code-editor').hidden = !codeDocument;
+  $<HTMLSelectElement>('#language-select').hidden = !codeDocument;
+  $('#encoding-status').hidden = !codeDocument;
   if (doc) $<HTMLSelectElement>('#language-select').value = doc.language;
   $('#document-kind').textContent = sharedId === activeId ? '◉  SHARED DOCUMENT' : '✎  WRITING';
   $('#selection-status').textContent = doc ? adapters.get(doc.id)?.selection() || '' : '';
@@ -312,13 +315,12 @@ async function activate(id: string) {
   if (!doc) return;
   const version = ++loadingVersion;
   activeId = id;
-  mode = doc.kind;
   workspace = doc.workspace;
   if (!tabs.includes(id)) tabs.push(id);
   render();
-  persistUI();
   $('#editor-loading').hidden = false;
   try {
+    await persistUI();
     const adapter = await ensureAdapter(doc);
     if (version === loadingVersion) {
       render();
@@ -334,14 +336,11 @@ async function nextTab(offset: number) {
 }
 async function switchMode(next: Mode) {
   if (mode === next) return;
-  const candidate =
-    [...tabs]
-      .reverse()
-      .map((id) => docs.find((d) => d.id === id))
-      .find((d) => d?.kind === next && d.workspace === workspace) ||
-    docs.find((d) => d.kind === next && d.workspace === workspace);
-  if (candidate) await activate(candidate.id);
-  else await create(next);
+  mode = next;
+  applySettings();
+  render();
+  await persistUI();
+  adapters.get(activeId)?.focus();
 }
 
 function changed(id: string) {
@@ -692,18 +691,20 @@ function settingsDialog() {
     form.append(row);
   }
   form.append(element('h3', 'Your workspace'));
-  field('Default environment', 'defaultMode', 'select', ['write', 'code']);
+  field('Default appearance', 'defaultMode', 'select', ['write', 'code']);
   field('Autosave', 'autosave', 'checkbox');
   field('Collapse sidebar', 'sidebarCollapsed', 'checkbox');
   field('Animations', 'animations', 'checkbox');
   field('Reduce motion', 'reducedMotion', 'checkbox');
   form.append(element('h3', 'Code editor'));
+  field('Code mode style', 'codeStyle', 'select', Object.keys(codeStyles));
   field('Font family', 'fontFamily', 'text');
   field('Font size', 'fontSize', 'number', undefined, 10, 32);
   field('Tab size', 'tabSize', 'select', ['2', '4', '8']);
   field('Word wrap', 'wordWrap', 'checkbox');
   field('Minimap', 'minimap', 'checkbox');
   form.append(element('h3', 'Writing & collaboration'));
+  field('Write mode style', 'writeStyle', 'select', Object.keys(writeStyles));
   field('Page width (px)', 'writeWidth', 'number', undefined, 480, 1200);
   field('Writing font', 'writeFont', 'select', ['Inter', 'Georgia', 'system-ui']);
   field('Display name', 'displayName', 'text');
@@ -989,7 +990,7 @@ const actions: Record<string, () => void | Promise<void>> = {
   undo: () => adapters.get(activeId)?.undo(),
   redo: () => adapters.get(activeId)?.redo(),
   find: async () => {
-    if (mode === 'code') (adapters.get(activeId) as CodeAdapter | undefined)?.find();
+    if (active()?.kind === 'code') (adapters.get(activeId) as CodeAdapter | undefined)?.find();
     else {
       const text = await ask('Find in document', '', 'Search the text on this page.');
       if (text) (window as Window & { find?: (text: string) => boolean }).find?.(text);
@@ -1063,7 +1064,7 @@ document.addEventListener(
       fn = () => {
         $('#document-search').focus();
       };
-    if (key === 'f' && mode === 'write') return; // browser find works in rich text
+    if (key === 'f' && active()?.kind === 'write') return; // browser find works in rich text
     if (fn) {
       event.preventDefault();
       event.stopPropagation();
@@ -1102,6 +1103,7 @@ async function start() {
   settings = await storage.settings();
   docs = await storage.list();
   const ui = await storage.ui();
+  mode = ui?.mode === 'code' || ui?.mode === 'write' ? ui.mode : settings.defaultMode;
   if (!ui && matchMedia('(max-width: 800px)').matches) {
     settings.sidebarCollapsed = true;
     await storage.settings(settings);

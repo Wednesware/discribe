@@ -16,6 +16,7 @@ test('editing continues after successive dialogs', async ({ page }) => {
 });
 async function code(page: Page) {
   await page.getByRole('button', { name: '⌘ Code', exact: true }).click();
+  await page.getByRole('button', { name: 'Open hello.py', exact: true }).click();
   await expect(page.locator('.monaco-editor')).toBeVisible();
   await expect(page.locator('#editor-loading')).toBeHidden();
 }
@@ -48,6 +49,8 @@ test('both real editors work and retain edits across modes and reload', async ({
   await page.keyboard.press('Control+s');
   await expect(page.locator('#save-state')).toHaveText('All changes saved');
   await page.getByRole('button', { name: '✎ Write', exact: true }).click();
+  await page.getByRole('button', { name: 'Open Welcome to your space.discribe', exact: true }).click();
+  await expect(page.locator('#editor-loading')).toBeHidden();
   await expect(page.locator('.bn-editor')).toContainText('A lasting thought.');
   await page.reload();
   await expect(page.locator('#editor-loading')).toBeHidden();
@@ -167,6 +170,9 @@ test.describe('touch browser', () => {
     await page.keyboard.insertText('A thought on the go. ');
     await expect(page.locator('.bn-editor')).toContainText('A thought on the go.');
     await page.getByRole('button', { name: '⌘ Code', exact: true }).tap();
+    await page.getByRole('button', { name: 'Toggle sidebar', exact: true }).tap();
+    await page.getByRole('button', { name: 'Open hello.py', exact: true }).tap();
+    await page.getByRole('button', { name: 'Toggle sidebar', exact: true }).tap();
     await expect(page.locator('#editor-loading')).toBeHidden();
     await page.locator('.monaco-editor textarea').focus();
     await page.keyboard.type('# Mobile code');
@@ -220,4 +226,59 @@ test('unsaved close can be canceled and discarded edits do not overwrite saved c
   await page.getByRole('button', { name: 'Open hello.py', exact: true }).click();
   await expect(page.locator('.view-lines')).not.toContainText('unsaved experiment');
   await expect(page.locator('.view-lines')).toContainText('dataclass');
+});
+
+test('appearance toggle keeps the current file, source, editor, tabs, and undo history', async ({ page }) => {
+  await ready(page);
+  await code(page);
+  const original = await exportedText(page);
+  const tabCount = await page.getByRole('tab').count();
+  await page.getByRole('button', { name: '✎ Write', exact: true }).click();
+  await expect(page.locator('#breadcrumb-name')).toHaveText('hello.py');
+  await expect(page.locator('.monaco-editor')).toBeVisible();
+  await expect(page.locator('#language-select')).toBeVisible();
+  expect(await page.getByRole('tab').count()).toBe(tabCount);
+  expect(await exportedText(page)).toBe(original);
+  await editCode(page, 'prefix');
+  await page.getByRole('button', { name: '⌘ Code', exact: true }).click();
+  expect(await exportedText(page)).toBe('prefix' + original);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  expect(await exportedText(page)).toBe(original);
+  await page.getByRole('button', { name: 'Open Welcome to your space.discribe', exact: true }).click();
+  await expect(page.locator('.bn-editor:visible')).toContainText('Good things begin');
+  await expect(page.locator('body')).toHaveAttribute('data-mode', 'code');
+  await page.getByRole('button', { name: '✎ Write', exact: true }).click();
+  await expect(page.locator('.bn-editor:visible')).toContainText('Good things begin');
+  await expect(page.locator('#breadcrumb-name')).toHaveText('Welcome to your space');
+  await page.reload();
+  await expect(page.locator('#editor-loading')).toBeHidden();
+  await expect(page.locator('body')).toHaveAttribute('data-mode', 'write');
+  await expect(page.locator('.bn-editor:visible')).toContainText('Good things begin');
+});
+
+test('separate Code and Write style choices persist and theme both editors', async ({ page }) => {
+  await ready(page);
+  expect(await page.locator('body').evaluate((el) => el.style.getPropertyValue('--paper'))).toBe('#d1dbe6');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Code mode style', exact: true }).selectOption('Midnight');
+  await page.getByRole('combobox', { name: 'Write mode style', exact: true }).selectOption('Sage');
+  await page.getByRole('button', { name: 'Save preferences' }).click();
+  await expect(page.locator('#app-dialog')).not.toBeVisible();
+  expect(await page.locator('body').evaluate((el) => el.style.getPropertyValue('--paper'))).toBe('#d5e1da');
+  await page.getByRole('button', { name: '⌘ Code', exact: true }).click();
+  expect(await page.locator('body').evaluate((el) => el.style.getPropertyValue('--bg'))).toBe('#101721');
+  await expect(page.locator('.bn-editor')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('#editor-loading')).toBeHidden();
+  await expect(page.locator('body')).toHaveAttribute('data-mode', 'code');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('combobox', { name: 'Code mode style', exact: true })).toHaveValue('Midnight');
+  await expect(page.getByRole('combobox', { name: 'Write mode style', exact: true })).toHaveValue('Sage');
+  await page.locator('#app-dialog .dialog-header button').click();
+  await page.getByRole('button', { name: 'Open hello.py', exact: true }).click();
+  await expect(page.locator('.monaco-editor')).toBeVisible();
+  await page.getByRole('button', { name: '✎ Write', exact: true }).click();
+  await expect
+    .poll(() => page.locator('.monaco-editor').evaluate((el) => getComputedStyle(el).backgroundColor))
+    .toBe('rgb(196, 210, 207)');
 });

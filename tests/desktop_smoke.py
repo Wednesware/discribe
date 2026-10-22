@@ -30,6 +30,7 @@ with TemporaryDirectory(prefix='discribe-desktop-') as temporary:
                 raise AssertionError('BlockNote failed to mount in Sulfur')
             assert len(bridge.store.list()) == 2, 'Frontend did not use native storage'
             app.window.evaluate_js('document.querySelector("[data-action=mode-code]").click()')
+            app.window.evaluate_js("""document.querySelector('[aria-label="Open hello.py"]').click()""")
             for _ in range(80):
                 time.sleep(.25)
                 if app.window.evaluate_js('Boolean(document.querySelector(".monaco-editor"))'):
