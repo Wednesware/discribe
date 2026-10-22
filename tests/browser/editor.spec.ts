@@ -406,3 +406,72 @@ test('new Write documents export real Markdown and use the same source in Code',
   await expect(page.locator('.bn-editor:visible h1')).toHaveText('A title');
   expect(await exportedText(page)).toContain('# A title');
 });
+
+for (const earlyEvent of [false, true]) {
+  test(`desktop startup waits for delayed native callbacks (early ready event: ${earlyEvent})`, async ({
+    page,
+  }) => {
+    await page.route('**/editor/', async (route) => {
+      const response = await route.fetch();
+      await route.fulfill({
+        response,
+        body: (await response.text()).replace(
+          '</head>',
+          '<meta name="discribe-desktop" content="true"></head>',
+        ),
+      });
+    });
+    await page.addInitScript(
+      ({ earlyEvent }) => {
+        const docs: any[] = [];
+        (window as any).nativeSaved = docs;
+        window.pywebview = { api: {} };
+        if (earlyEvent) window.dispatchEvent(new Event('pywebviewready'));
+        setTimeout(() => {
+          window.pywebview!.api = {
+            list_documents: async () => docs,
+            save_document: async (doc: any) => {
+              const saved = { ...doc, revision: doc.revision + 1 };
+              const index = docs.findIndex((item) => item.id === doc.id);
+              if (index < 0) docs.push(saved);
+              else docs[index] = saved;
+              return saved;
+            },
+            delete_document: async () => {},
+            settings: async (value: any) => value || {},
+            open_file: async () => null,
+            write_file: async () => null,
+          };
+          if (!earlyEvent) window.dispatchEvent(new Event('pywebviewready'));
+        }, 1200);
+      },
+      { earlyEvent },
+    );
+    await ready(page);
+    await expect(page.locator('#notifications')).not.toContainText('storage');
+    expect(await page.evaluate(() => (window as any).nativeSaved.length)).toBe(2);
+    await page.locator('.bn-editor:visible').click();
+    await page.keyboard.press('Control+End');
+    await page.keyboard.type(' Native bridge edit.');
+    await page.keyboard.press('Control+s');
+    await expect(page.locator('#save-state')).toHaveText('All changes saved');
+    expect(await page.evaluate(() => JSON.stringify((window as any).nativeSaved))).toContain(
+      'Native bridge edit.',
+    );
+    expect(
+      await page.evaluate(async () => {
+        const db = await new Promise<IDBDatabase>((resolve) => {
+          const request = indexedDB.open('discribe', 1);
+          request.onsuccess = () => resolve(request.result);
+        });
+        return await new Promise<number>((resolve) => {
+          const request = db.transaction('documents').objectStore('documents').count();
+          request.onsuccess = () => {
+            db.close();
+            resolve(request.result);
+          };
+        });
+      }),
+    ).toBe(0);
+  });
+}

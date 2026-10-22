@@ -21,25 +21,34 @@ export class Storage {
     };
     this.db = await request(r);
     this.db.onversionchange = () => this.db.close();
-    // Sulfur can announce its bridge after the module has loaded.
+    // pywebview creates its namespace before exposing Python callbacks. Wait
+    // for the actual API, including when its ready event has already fired.
     const desktop = !!document.querySelector('meta[name="discribe-desktop"]');
-    if (!window.pywebview && desktop)
+    const nativeReady = () =>
+      ['list_documents', 'save_document', 'delete_document', 'settings', 'open_file', 'write_file'].every(
+        (name) => typeof window.pywebview?.api?.[name] === 'function',
+      );
+    if (desktop && !nativeReady())
       await new Promise<void>((resolve, reject) => {
-        const timer = setTimeout(
-          () => reject(Error('The desktop bridge did not connect. Restart Discribe.')),
-          10000,
-        );
-        window.addEventListener(
-          'pywebviewready',
-          () => {
-            clearTimeout(timer);
-            resolve();
-          },
-          { once: true },
-        );
+        const cleanup = () => {
+          clearTimeout(timeout);
+          clearInterval(poll);
+          window.removeEventListener('pywebviewready', check);
+        };
+        const check = () => {
+          if (!nativeReady()) return;
+          cleanup();
+          resolve();
+        };
+        const timeout = setTimeout(() => {
+          cleanup();
+          reject(Error('Native document storage did not connect. Close and reopen Discribe.'));
+        }, 10000);
+        const poll = setInterval(check, 50);
+        window.addEventListener('pywebviewready', check);
+        check();
       });
-    this.native = !!window.pywebview?.api.list_documents;
-    if (desktop && !this.native) throw Error('Native document storage is unavailable. Restart Discribe.');
+    this.native = nativeReady();
   }
   async list(): Promise<Doc[]> {
     if (this.native) return window.pywebview!.api.list_documents();
