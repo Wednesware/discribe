@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
     "format": "prettier --write frontend tools tests/browser playwright.config.ts",
-    "format:check": "prettier --check frontend tools tests/browser playwright.config.ts"
+    "format:check": "prettier --check frontend tools tests/browser playwright.config.ts",
+    "test:pages": "node tools/check-pages.mjs"
   },
   "dependencies": {
     "@blocknote/core": "^0.51.0",

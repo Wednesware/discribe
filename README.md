@@ -61,6 +61,28 @@ For LAN collaboration, use `--bind 0.0.0.0` and a reachable host address in the
 collaboration panel. Use an HTTPS reverse proxy for remote deployment. Browser
 mixed-content restrictions prevent an HTTPS editor from joining an HTTP host.
 
+## GitHub Pages
+
+The browser edition is published at https://wednesware.github.io/discribe/.
+The `Deploy Discribe to GitHub Pages` workflow builds and checks the static site,
+then deploys `dist/` using GitHub's official Pages artifact/deployment actions.
+It runs on pushes to `main`, release tags named `pages-*`, or a manual run from
+Actions once the workflow is on the default branch. Tagged builds allow publishing
+the current implementation before its pull request is merged.
+
+For a fork, go to **Settings → Pages → Build and deployment → Source** and choose
+**GitHub Actions**. In **Settings → Environments → github-pages**, allow deployments
+from `main` and tags matching `pages-*` if deployment branch/tag restrictions are
+configured. Merge this workflow to your default branch, then use **Actions → Deploy
+Discribe to GitHub Pages → Run workflow** for the first deployment. The deployment
+job reports your site's URL; a project site normally uses `/<repository-name>/`.
+
+Assets, editor workers, branding, and the service worker use relative URLs.
+`npm run test:pages` verifies the built app at `/discribe/`, including both editors,
+local persistence, and offline reload. Pages hosts the browser editor; documents
+stay in your browser. Collaboration requires a separate HTTPS Beryllium host,
+and native file dialogs remain part of the desktop edition.
+
 ## Your workspace
 
 - Write formatted documents with headings, lists, checklists, quotes, tables,
