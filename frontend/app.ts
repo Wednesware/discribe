@@ -168,7 +168,34 @@ function applySettings() {
   document.documentElement.style.setProperty('--write-font', settings.writeFont);
   for (const adapter of viewCache.values()) adapter.configure(settings);
 }
+let zoomSaveTimer: ReturnType<typeof setTimeout>;
+function editorZoom() {
+  return settings[mode === 'code' ? 'codeZoom' : 'writeZoom'];
+}
+function showZoom() {
+  const value = editorZoom();
+  $('#zoom-status').textContent = `${value}%`;
+  $('#zoom-status').title = `Reset editor zoom (${value}%, Ctrl+0)`;
+}
+function setZoom(value: number) {
+  const key = mode === 'code' ? 'codeZoom' : 'writeZoom';
+  const next = Math.max(50, Math.min(200, value));
+  if (settings[key] === next) return;
+  settings[key] = next;
+  for (const view of viewCache.values()) view.configure(settings);
+  showZoom();
+  clearTimeout(zoomSaveTimer);
+  zoomSaveTimer = setTimeout(
+    () =>
+      run(async () => {
+        await storage.settings(settings);
+      }),
+    200,
+  );
+}
+
 function render() {
+  showZoom();
   const doc = active();
   applyAppearance(mode, settings);
   document.title = `${doc ? title(doc) + ' — ' : ''}Discribe`;
@@ -1021,6 +1048,7 @@ const actions: Record<string, () => void | Promise<void>> = {
   settings: settingsDialog,
   new: newDocument,
   open: openFiles,
+  'zoom-reset': () => setZoom(100),
   'document-menu': () => documentMenu(),
   export: () => exportDoc(),
   undo: () => adapters.get(activeId)?.undo(),
@@ -1089,6 +1117,22 @@ document.addEventListener(
   (event) => {
     if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
     const key = event.key.toLowerCase();
+    const zoomKey =
+      ['+', '=', '-', '_', '0'].includes(key) ||
+      ['NumpadAdd', 'NumpadSubtract', 'Numpad0'].includes(event.code);
+    const target = event.target as HTMLElement;
+    if (
+      zoomKey &&
+      !$<HTMLDialogElement>('#app-dialog').open &&
+      (!target.closest('input, textarea, select, [contenteditable]') || target.closest('#editor-stage'))
+    ) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const reset = key === '0' || event.code === 'Numpad0';
+      const decrease = key === '-' || key === '_' || event.code === 'NumpadSubtract';
+      setZoom(reset ? 100 : editorZoom() + (decrease ? -10 : 10));
+      return;
+    }
     let fn: (() => void | Promise<void>) | undefined;
     if (key === 's') fn = () => save(active(), true, event.shiftKey);
     if (key === 'n') fn = () => create(mode).then(() => {});
@@ -1108,6 +1152,35 @@ document.addEventListener(
     }
   },
   true,
+);
+let wheelZoomDelta = 0;
+let lastZoomWheel = 0;
+$('#editor-stage').addEventListener(
+  'wheel',
+  (event: WheelEvent) => {
+    if (
+      !(event.ctrlKey || event.metaKey) ||
+      event.altKey ||
+      event.deltaY === 0 ||
+      $<HTMLDialogElement>('#app-dialog').open
+    )
+      return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const now = performance.now();
+    const delta =
+      event.deltaY *
+      (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? $('#editor-stage').clientHeight : 1);
+    if (now - lastZoomWheel > 250 || Math.sign(delta) !== Math.sign(wheelZoomDelta)) wheelZoomDelta = 0;
+    lastZoomWheel = now;
+    wheelZoomDelta += delta;
+    const steps = Math.trunc(wheelZoomDelta / 100);
+    if (steps) {
+      wheelZoomDelta -= steps * 100;
+      setZoom(editorZoom() - steps * 10);
+    }
+  },
+  { passive: false, capture: true },
 );
 window.addEventListener('beforeunload', (event) => {
   if (dirty.size || (session && !session.connected)) {

@@ -492,3 +492,99 @@ for (const earlyEvent of [false, true]) {
     ).toBe(0);
   });
 }
+
+test('editor zoom supports keyboard and wheel, stays independent, and persists without changing content', async ({
+  page,
+}) => {
+  await ready(page);
+  const original = await exportedText(page);
+  const toolbarWidth = await page.locator('.toolbar').evaluate((el) => el.getBoundingClientRect().width);
+  await page.locator('.bn-editor:visible').click();
+  await page.keyboard.press('Control+=');
+  await expect(page.locator('#zoom-status')).toHaveText('110%');
+  await expect(page.locator('.write-instance:visible')).toHaveCSS('zoom', '1.1');
+  await page.locator('.bn-editor:visible').hover();
+  await page.keyboard.down('Control');
+  await page.mouse.wheel(0, -100);
+  await page.keyboard.up('Control');
+  await expect(page.locator('#zoom-status')).toHaveText('120%');
+  expect(await exportedText(page)).toBe(original);
+  expect(await page.locator('.toolbar').evaluate((el) => el.getBoundingClientRect().width)).toBe(
+    toolbarWidth,
+  );
+  await code(page);
+  await expect(page.locator('#zoom-status')).toHaveText('100%');
+  const codeOriginal = await exportedText(page);
+  await page.locator('.monaco-editor:visible textarea').focus();
+  await page.keyboard.press('Control+Shift+=');
+  await expect(page.locator('#zoom-status')).toHaveText('110%');
+  expect(
+    await page.locator('.view-lines:visible').evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
+  ).toBeGreaterThan(14);
+  await page.locator('.monaco-editor:visible').hover();
+  await page.keyboard.down('Control');
+  await page.mouse.wheel(0, 100);
+  await page.keyboard.up('Control');
+  await expect(page.locator('#zoom-status')).toHaveText('100%');
+  await page.keyboard.press('Meta+-');
+  await expect(page.locator('#zoom-status')).toHaveText('90%');
+  expect(await exportedText(page)).toBe(codeOriginal);
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const db = await new Promise<IDBDatabase>((resolve) => {
+          const r = indexedDB.open('discribe');
+          r.onsuccess = () => resolve(r.result);
+        });
+        return await new Promise((resolve) => {
+          const r = db.transaction('settings').objectStore('settings').get('app');
+          r.onsuccess = () => {
+            db.close();
+            resolve([r.result?.codeZoom, r.result?.writeZoom]);
+          };
+        });
+      }),
+    )
+    .toEqual([90, 120]);
+  await page.reload();
+  await expect(page.locator('#editor-loading')).toBeHidden();
+  await expect(page.locator('#zoom-status')).toHaveText('90%');
+  await page.getByRole('button', { name: '✎ Write', exact: true }).click();
+  await expect(page.locator('#zoom-status')).toHaveText('120%');
+  await expect(page.locator('.write-instance:visible')).toHaveCSS('zoom', '1.2');
+  await page.keyboard.press('Control+0');
+  await expect(page.locator('#zoom-status')).toHaveText('100%');
+});
+
+for (const editor of ['write', 'code']) {
+  test(`${editor} zoom is bounded, handles fine wheel deltas, and allows editing at scale`, async ({
+    page,
+  }) => {
+    await ready(page);
+    if (editor === 'code') await code(page);
+    const target = page.locator(editor === 'code' ? '.monaco-editor:visible textarea' : '.bn-editor:visible');
+    await target.focus();
+    for (let i = 0; i < 15; i++) await page.keyboard.press('Control+=');
+    await expect(page.locator('#zoom-status')).toHaveText('200%');
+    await page.keyboard.press('Control+Home');
+    await page.keyboard.type('Zoomed editing ');
+    await expect(
+      page.locator(editor === 'code' ? '.view-lines:visible' : '.bn-editor:visible'),
+    ).toContainText('Zoomed editing');
+    await page.keyboard.press('Control+z');
+    await page.locator('#zoom-status').click();
+    await expect(page.locator('#zoom-status')).toHaveText('100%');
+    for (let i = 0; i < 4; i++)
+      await page
+        .locator('#editor-stage')
+        .dispatchEvent('wheel', { ctrlKey: true, deltaY: -25, deltaMode: 0 });
+    await expect(page.locator('#zoom-status')).toHaveText('110%');
+    await target.focus();
+    for (let i = 0; i < 20; i++) await page.keyboard.press('Control+-');
+    await expect(page.locator('#zoom-status')).toHaveText('50%');
+    await page.keyboard.press('Control+0');
+    await expect(page.locator('#zoom-status')).toHaveText('100%');
+    await page.locator('#editor-stage').dispatchEvent('wheel', { deltaY: 100 });
+    await expect(page.locator('#zoom-status')).toHaveText('100%');
+  });
+}

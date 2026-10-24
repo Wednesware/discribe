@@ -97,7 +97,8 @@ export class CodeAdapter implements Adapter {
     monaco.editor.setTheme(theme);
     this.editor.updateOptions({
       fontFamily: s.fontFamily,
-      fontSize: s.fontSize,
+      fontSize: (s.fontSize * s.codeZoom) / 100,
+      mouseWheelZoom: false,
       wordWrap: s.wordWrap ? 'on' : 'off',
       minimap: { enabled: s.minimap },
       smoothScrolling: s.animations && !s.reducedMotion,

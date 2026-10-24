@@ -1234,3 +1234,11 @@ body .code-editor {
 body[data-theme-family='mixed'] .code-editor {
   background-color: var(--paper);
 }
+
+.zoom-status {
+  padding: 2px 5px;
+  min-height: 22px;
+  font-size: inherit;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
