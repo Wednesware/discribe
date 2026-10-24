@@ -36,6 +36,10 @@ with TemporaryDirectory(prefix='discribe-desktop-') as temporary:
             assert app.window.evaluate_js('document.querySelector("#breadcrumb-name").textContent') == 'startup.py'
             assert app.window.evaluate_js('document.querySelectorAll("[role=tab]").length') == 2
             assert app.window.evaluate_js('document.querySelector(".bn-editor").textContent.includes("opened from terminal")')
+            app.window.evaluate_js('document.querySelector(".bn-editor").dispatchEvent(new KeyboardEvent("keydown", {key: "+", ctrlKey: true, bubbles: true, cancelable: true}))')
+            assert app.window.evaluate_js('document.querySelector("#zoom-status").textContent') == '110%'
+            assert app.window.evaluate_js('getComputedStyle(document.querySelector(".write-instance")).zoom') == '1.1'
+            app.window.evaluate_js('document.querySelector("#zoom-status").click()')
             app.window.evaluate_js('document.querySelector("[data-action=mode-code]").click()')
             for _ in range(80):
                 time.sleep(.25)
@@ -43,6 +47,14 @@ with TemporaryDirectory(prefix='discribe-desktop-') as temporary:
                     break
             else:
                 raise AssertionError('Monaco failed to mount in Sulfur')
+            app.window.evaluate_js('document.querySelector(".monaco-editor").dispatchEvent(new KeyboardEvent("keydown", {key: "-", ctrlKey: true, bubbles: true, cancelable: true}))')
+            assert app.window.evaluate_js('document.querySelector("#zoom-status").textContent') == '90%'
+            for _ in range(40):
+                time.sleep(.1)
+                if bridge.store.settings().get('codeZoom') == 90:
+                    break
+            else:
+                raise AssertionError('Zoom preference did not persist through the native bridge')
             assert not app.window.evaluate_js('Boolean(document.querySelector("#notifications .error"))'), 'Frontend reported an error'
             print('Sulfur smoke passed: real Qt window, native bridge, CLI file arguments, SQLite, BlockNote, Monaco.', flush=True)
         except Exception as error:

@@ -17,7 +17,7 @@ export class WriteAdapter implements Adapter {
   private readonly = false;
   private settings!: Settings;
   constructor(
-    container: HTMLElement,
+    private container: HTMLElement,
     doc: Doc,
     settings: Settings,
     onChange: () => void,
@@ -72,6 +72,7 @@ export class WriteAdapter implements Adapter {
   }
   configure(s: Settings) {
     this.settings = s;
+    this.container.style.zoom = String(s.writeZoom / 100);
     document.documentElement.style.setProperty('--write-width', `${s.writeWidth}px`);
     document.documentElement.style.setProperty('--write-font', s.writeFont);
     this.render();

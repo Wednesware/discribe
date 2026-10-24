@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "discribe"
-version = "0.1.0"
+version = "0.1.1"
 description = "Two ways to write. One place to create."
 requires-python = ">=3.12"
 dependencies = ["wwn>=26.66"]

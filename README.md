@@ -80,6 +80,9 @@ local persistence, and offline reload. Pages hosts the browser editor; documents
 stay in your browser. Collaboration requires a separate HTTPS Beryllium host,
 and native file dialogs remain part of the desktop edition.
 
+Editor zoom ranges from 50% to 200%, with independent saved levels for Code and
+Write. Click the percentage in the status bar to reset it to 100%.
+
 ## Your workspace
 
 - Write formatted documents with headings, lists, checklists, quotes, tables,
@@ -129,6 +132,8 @@ Deleting a workspace document leaves an exported/native file on disk.
 
 | Shortcut | Action |
 | --- | --- |
+| Ctrl/Cmd++ / − | Zoom the current editor in/out (also Ctrl+scroll over the editor) |
+| Ctrl/Cmd+0 | Reset editor zoom to 100% |
 | Ctrl/Cmd+S | Save; in desktop, also save to a selected native file |
 | Ctrl/Cmd+Shift+S | Save As / export |
 | Ctrl/Cmd+N | New document in the current environment |

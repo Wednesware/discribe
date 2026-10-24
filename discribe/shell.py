@@ -45,7 +45,7 @@ def create_page(asset_prefix="./"):
             E("div", id="document-list", class_="document-list"),
             button("+  New document", "new", cls="new-document"),
             E("div", E("span", "◉", class_="local-dot"), E("div", E("strong", "Made for your ideas"), E("small", "Local first. Yours, always.")), class_="local-note"),
-            E("div", E("span", "WEDNESWARE", class_="eyebrow"), E("span", "v0.1", class_="muted"), class_="sidebar-footer"),
+            E("div", E("span", "WEDNESWARE", class_="eyebrow"), E("span", "v0.1.1", class_="muted"), class_="sidebar-footer"),
             id="sidebar", class_="sidebar", aria_label="Documents and workspaces")
 
     def editor_area():
@@ -70,7 +70,7 @@ def create_page(asset_prefix="./"):
                     ("typescript", "TypeScript"), ("html", "HTML"), ("css", "CSS"), ("json", "JSON"),
                     ("yaml", "YAML"), ("sql", "SQL"), ("markdown", "Markdown"), ("rust", "Rust"), ("go", "Go"), ("shell", "Shell")]],
                   id="language-select", aria_label="Code language", hidden=True),
-                E("span", "UTF-8", id="encoding-status", hidden=True), E("span", "100%", class_="muted")), class_="status-bar"),
+                E("span", "UTF-8", id="encoding-status", hidden=True), button("100%", "zoom-reset", label="Reset editor zoom", cls="zoom-status", id="zoom-status")), class_="status-bar"),
             class_="main-panel")
 
     page.head(E("meta", charset="utf-8"), E("meta", name="viewport", content="width=device-width, initial-scale=1"),

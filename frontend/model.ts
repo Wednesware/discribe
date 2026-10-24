@@ -24,6 +24,8 @@ export interface Settings {
   writeStyle: string;
   fontFamily: string;
   fontSize: number;
+  codeZoom: number;
+  writeZoom: number;
   tabSize: number;
   wordWrap: boolean;
   minimap: boolean;
@@ -41,6 +43,8 @@ export const defaults: Settings = {
   writeStyle: 'Grey blue',
   fontFamily: 'JetBrains Mono',
   fontSize: 14,
+  codeZoom: 100,
+  writeZoom: 100,
   tabSize: 4,
   wordWrap: true,
   minimap: false,
