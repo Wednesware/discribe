@@ -9,6 +9,12 @@ Fluorine-generated workspace. Python manages native documents, Sulfur provides
 the desktop window, and an optional Beryllium host transports Yjs collaboration.
 React is confined to the BlockNote editor container. No Vite server is involved.
 
+## Installation
+
+> `h2 get discribe`
+
+Or just use the browser version [here](https://discribe.wednesware.org)
+
 ## Get started
 
 Requires Python 3.12+, Node.js 22+, and the supplied Nitrogen installation.
